@@ -62,11 +62,11 @@ A professional multi-step contact form for FinancePro, a financial consulting an
 - **Success criteria**: All data displays accurately including attachment file names and sizes, edit buttons navigate to correct steps, data and files persist when returning
 
 ### API Submission
-- **Functionality**: POST request to /api/contact endpoint with FormData (multipart/form-data) for file uploads, loading state and error handling
-- **Purpose**: Submit form data including file attachments to backend with proper error recovery
+- **Functionality**: Supabase database insert to `contact_submissions` table with file upload to storage bucket, loading state and error handling
+- **Purpose**: Submit form data including file attachments to Supabase backend with proper error recovery
 - **Trigger**: User clicks "Confirmer et envoyer" on confirmation step
-- **Progression**: Disable button → Show "Envoi en cours..." → Send POST request with FormData → Handle response → Show success screen or error message
-- **Success criteria**: Loading state displays during submission, files are properly encoded in FormData, success shows animated confirmation, errors display with helpful messages and retry option
+- **Progression**: Disable button → Show "Envoi en cours..." → Insert data to Supabase → Upload files to storage → Handle response → Show success screen or error message
+- **Success criteria**: Loading state displays during submission, files are properly uploaded to Supabase Storage bucket, success shows animated confirmation, errors display with helpful messages and retry option
 
 ### Footer with Contact & Social Links
 - **Functionality**: Site-wide footer displaying company information, contact details, and social media links
@@ -102,19 +102,23 @@ Client-side validation enforces data quality before API submission:
 - **Progressive Validation**: Errors clear when user starts typing corrections or removes problematic files
 
 ## API Configuration
-The form submits to a backend endpoint with the following configuration:
+The form is integrated with Supabase for real-time data persistence and file storage:
 
-- **Endpoint**: `/api/contact` (relative URL, configure in production)
-- **Method**: `POST`
-- **Content-Type**: `multipart/form-data` (automatically set by browser when using FormData)
-- **Body**: FormData object containing all form fields and file attachments:
-  - Text fields: `name`, `email`, `phone`, `message`
-  - JSON-stringified arrays: `interests`, `services`, `modules`
-  - Files: `attachment_0`, `attachment_1`, ... `attachment_N` (one per uploaded file)
-- **Success Response**: Any 2xx status code shows success screen
-- **Error Handling**: 4xx/5xx errors display error message from response body or generic fallback
+- **Database**: Supabase PostgreSQL database
+- **Table**: `contact_submissions` - stores all form submission data
+- **Storage Bucket**: `contact-attachments` - stores uploaded files
+- **Authentication**: Uses Supabase anon key for public access with Row Level Security (RLS) policies
+- **Data Structure**:
+  - Text fields: `name`, `email`, `country_code`, `phone`, `message`
+  - Array fields: `interests`, `services`, `modules`
+  - Auto-generated: `id` (UUID), `created_at` (timestamp)
+- **File Storage**: Files uploaded to `{submission_id}/{timestamp}_{filename}` path structure
+- **Success Response**: Successful insert triggers success screen
+- **Error Handling**: Supabase errors are caught and displayed to the user with helpful messages
 - **Loading State**: Button shows "Envoi en cours..." and disables during submission
 - **Toast Notifications**: Success/error toasts via sonner library
+
+See `API_SETUP.md` for detailed database schema and storage bucket configuration instructions.
 
 ## Design Direction
 The design should feel corporate and trustworthy with a clean, professional aesthetic that reflects financial expertise. Clear blue tones communicate reliability and competence, while gold accents add a touch of premium quality. The interface should be minimal and focused, avoiding distractions from the form completion goal.

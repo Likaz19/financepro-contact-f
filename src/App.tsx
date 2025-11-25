@@ -15,6 +15,7 @@ import { FloatingContactButton } from "@/components/FloatingContactButton"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
+import { supabase } from "@/lib/supabase"
 
 type FormData = {
   name: string
@@ -313,32 +314,44 @@ function App() {
     setApiError("")
 
     try {
-      const formDataToSend = new FormData()
-      formDataToSend.append("name", formData.name)
-      formDataToSend.append("email", formData.email)
-      formDataToSend.append("countryCode", formData.countryCode)
-      formDataToSend.append("phone", formData.phone)
-      formDataToSend.append("interests", JSON.stringify(formData.interests))
-      formDataToSend.append("services", JSON.stringify(formData.services))
-      formDataToSend.append("modules", JSON.stringify(formData.modules))
-      formDataToSend.append("message", formData.message)
-      
-      formData.attachments.forEach((file, index) => {
-        formDataToSend.append(`attachment_${index}`, file)
-      })
-
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        body: formDataToSend,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || `Erreur ${response.status}: ${response.statusText}`)
+      const contactData = {
+        name: formData.name,
+        email: formData.email,
+        country_code: formData.countryCode,
+        phone: formData.phone,
+        interests: formData.interests,
+        services: formData.services,
+        modules: formData.modules,
+        message: formData.message,
       }
 
-      const result = await response.json()
-      console.log("Formulaire soumis avec succès:", result)
+      const { data, error } = await supabase
+        .from('contact_submissions')
+        .insert([contactData])
+        .select()
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      if (formData.attachments.length > 0 && data && data[0]) {
+        const submissionId = data[0].id
+        
+        for (let i = 0; i < formData.attachments.length; i++) {
+          const file = formData.attachments[i]
+          const fileName = `${submissionId}/${Date.now()}_${file.name}`
+          
+          const { error: uploadError } = await supabase.storage
+            .from('contact-attachments')
+            .upload(fileName, file)
+
+          if (uploadError) {
+            console.error("Erreur lors du téléchargement du fichier:", uploadError)
+          }
+        }
+      }
+
+      console.log("Formulaire soumis avec succès:", data)
       
       setSubmissionState("success")
       toast.success("Message envoyé avec succès!")

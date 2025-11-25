@@ -1,190 +1,149 @@
-# API Configuration Guide
+# API Configuration Guide - Supabase Integration
 
-This form submits data to a backend API endpoint. You'll need to configure your backend to receive and process the form submissions.
+This form is integrated with Supabase for data persistence and file storage. The configuration is complete and ready to use.
 
-## Endpoint Configuration
+## Supabase Configuration
 
-The form is currently configured to POST to `/api/contact`. You can modify this in `src/App.tsx`:
+**Project URL**: `https://rzudotbbfoklxcebghan.supabase.co`  
+**Anon Key**: Configured in `src/lib/supabase.ts`
+
+The Supabase client is initialized and ready to use throughout the application.
+
+## Database Schema Required
+
+You need to create the following table in your Supabase database:
+
+### Table: `contact_submissions`
+
+```sql
+CREATE TABLE contact_submissions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  country_code TEXT,
+  phone TEXT,
+  interests TEXT[] NOT NULL,
+  services TEXT[],
+  modules TEXT[],
+  message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE contact_submissions ENABLE ROW LEVEL SECURITY;
+
+-- Policy to allow inserts from anyone (for form submissions)
+CREATE POLICY "Allow public inserts" ON contact_submissions
+  FOR INSERT
+  TO public
+  WITH CHECK (true);
+
+-- Policy to allow only authenticated users to read (for admin viewing)
+CREATE POLICY "Allow authenticated reads" ON contact_submissions
+  FOR SELECT
+  TO authenticated
+  USING (true);
+```
+
+## Storage Bucket Required
+
+You need to create a storage bucket for file attachments:
+
+### Bucket: `contact-attachments`
+
+1. Go to Storage in your Supabase dashboard
+2. Create a new bucket named `contact-attachments`
+3. Configure bucket settings:
+   - Public: `false` (files are private)
+   - File size limit: `10MB`
+   - Allowed MIME types: `application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, image/jpeg, image/png, image/gif, text/plain, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+
+4. Set up storage policies:
+
+```sql
+-- Policy to allow uploads from anyone
+CREATE POLICY "Allow public uploads" ON storage.objects
+  FOR INSERT
+  TO public
+  WITH CHECK (bucket_id = 'contact-attachments');
+
+-- Policy to allow authenticated users to read files
+CREATE POLICY "Allow authenticated reads" ON storage.objects
+  FOR SELECT
+  TO authenticated
+  USING (bucket_id = 'contact-attachments');
+```
+
+## How It Works
+
+1. **Form Submission**: When the user clicks "Confirmer et envoyer", the form data is inserted into the `contact_submissions` table
+2. **File Upload**: If files are attached, they are uploaded to the `contact-attachments` bucket with a folder structure: `{submission_id}/{timestamp}_{filename}`
+3. **Success**: Upon successful submission, the success screen is displayed
+4. **Error Handling**: Any Supabase errors are caught and displayed to the user with helpful messages
+
+## Data Structure
+
+The form sends the following data to Supabase:
 
 ```typescript
-const response = await fetch("/api/contact", {  // Change this URL
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    // Add any authentication headers here if needed
-    // "Authorization": "Bearer YOUR_TOKEN",
-  },
-  body: JSON.stringify(formData),
-})
-```
-
-## Request Format
-
-The form sends a JSON payload with the following structure:
-
-```json
 {
-  "name": "Jean Dupont",
-  "email": "jean.dupont@example.com",
-  "phone": "76 464 42 90",
-  "interests": ["Consulting", "Formation"],
-  "services": ["Audit financier", "Conseil stratégique"],
-  "modules": ["Comptabilité fondamentale", "Analyse financière"],
-  "message": "Je souhaiterais plus d'informations sur vos services de consulting..."
+  name: string          // Full name
+  email: string         // Email address
+  country_code: string  // Phone country code (e.g., "+221")
+  phone: string         // Phone number without country code
+  interests: string[]   // ["Consulting", "Formation"]
+  services: string[]    // Selected consulting services
+  modules: string[]     // Selected training modules
+  message: string       // Optional message
+  created_at: string    // Auto-generated timestamp
 }
 ```
 
-### Field Descriptions
+## Viewing Submissions
 
-- `name` (string): Full name, required, minimum 2 characters
-- `email` (string): Email address, required, validated format
-- `phone` (string): Phone number, optional, 8-15 digits if provided
-- `interests` (array): At least one of ["Consulting", "Formation"]
-- `services` (array): Selected consulting services (only if Consulting interest selected)
-- `modules` (array): Selected training modules (only if Formation interest selected)
-- `message` (string): Optional message, 10-1000 characters if provided
+To view form submissions in Supabase:
 
-## Expected Response Format
+1. Go to your Supabase dashboard
+2. Navigate to Table Editor
+3. Select the `contact_submissions` table
+4. View all submissions with filters and sorting
 
-### Success Response (2xx)
+To view uploaded files:
 
-Any 2xx status code will trigger the success screen. Optionally return JSON:
+1. Go to Storage in your Supabase dashboard
+2. Select the `contact-attachments` bucket
+3. Browse folders by submission ID
 
-```json
-{
-  "success": true,
-  "message": "Contact form submitted successfully",
-  "id": "12345"
-}
-```
+## Testing the Integration
 
-### Error Response (4xx/5xx)
-
-Return a JSON object with a `message` field for user-friendly error display:
-
-```json
-{
-  "success": false,
-  "message": "Unable to process your request. Please try again."
-}
-```
-
-If no `message` field is provided, a generic error message will be shown.
-
-## Example Backend Implementations
-
-### Node.js + Express
-
-```javascript
-app.post('/api/contact', express.json(), async (req, res) => {
-  try {
-    const { name, email, phone, interests, services, modules, message } = req.body;
-    
-    // Validate required fields
-    if (!name || !email || interests.length === 0) {
-      return res.status(400).json({
-        message: "Champs requis manquants"
-      });
-    }
-    
-    // Process the form data (e.g., save to database, send email, etc.)
-    // ... your business logic here ...
-    
-    res.status(200).json({
-      success: true,
-      message: "Formulaire reçu avec succès",
-      id: "generated-id"
-    });
-  } catch (error) {
-    console.error('Error processing contact form:', error);
-    res.status(500).json({
-      message: "Erreur serveur. Veuillez réessayer."
-    });
-  }
-});
-```
-
-### Python + Flask
-
-```python
-from flask import Flask, request, jsonify
-
-@app.route('/api/contact', methods=['POST'])
-def contact():
-    try:
-        data = request.get_json()
-        
-        # Validate required fields
-        if not data.get('name') or not data.get('email') or not data.get('interests'):
-            return jsonify({
-                'message': 'Champs requis manquants'
-            }), 400
-        
-        # Process the form data
-        # ... your business logic here ...
-        
-        return jsonify({
-            'success': True,
-            'message': 'Formulaire reçu avec succès',
-            'id': 'generated-id'
-        }), 200
-        
-    except Exception as e:
-        print(f'Error processing contact form: {e}')
-        return jsonify({
-            'message': 'Erreur serveur. Veuillez réessayer.'
-        }), 500
-```
-
-## Testing Without a Backend
-
-For testing purposes, you can use a mock API service:
-
-1. **JSONPlaceholder** (always returns success):
-   - Change endpoint to: `https://jsonplaceholder.typicode.com/posts`
-
-2. **RequestBin** (inspect requests):
-   - Create a bin at https://requestbin.com
-   - Use your unique bin URL as the endpoint
-
-3. **Local Mock Server**:
-   - Create a simple local server that logs requests and returns success
-
-## Adding Authentication
-
-If your API requires authentication, add headers in the fetch call:
-
-```typescript
-const response = await fetch("/api/contact", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${YOUR_AUTH_TOKEN}`,
-    "X-API-Key": YOUR_API_KEY,
-  },
-  body: JSON.stringify(formData),
-})
-```
-
-## CORS Configuration
-
-If your API is on a different domain, ensure CORS is properly configured:
-
-**Express example:**
-```javascript
-app.use(cors({
-  origin: 'https://your-frontend-domain.com',
-  methods: ['POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-```
+1. Fill out the form completely
+2. Attach some test files (optional)
+3. Click "Confirmer et envoyer"
+4. Check your Supabase dashboard to verify:
+   - New row in `contact_submissions` table
+   - Files in `contact-attachments` bucket (if uploaded)
 
 ## Production Considerations
 
-1. **Rate Limiting**: Implement rate limiting to prevent spam
-2. **Validation**: Always validate on the server side, don't trust client validation
-3. **Sanitization**: Sanitize input to prevent injection attacks
-4. **Email Notifications**: Configure email service to notify your team of new submissions
-5. **Database Storage**: Store submissions for follow-up and analytics
-6. **Error Logging**: Log errors for debugging and monitoring
-7. **HTTPS**: Always use HTTPS in production
+1. **Email Notifications**: Set up Supabase Edge Functions or webhooks to send email notifications when new submissions arrive
+2. **Admin Dashboard**: Create an admin interface to manage and respond to submissions
+3. **Rate Limiting**: Implement rate limiting on the table inserts to prevent spam
+4. **File Scanning**: Add virus scanning for uploaded files before storage
+5. **Backup**: Configure automated backups for the submissions table
+6. **Monitoring**: Set up alerts for failed submissions or errors
+
+## Troubleshooting
+
+**Error: "Failed to insert row"**
+- Ensure the `contact_submissions` table exists
+- Verify RLS policies are configured correctly
+- Check that the anon key has insert permissions
+
+**Error: "Storage bucket not found"**
+- Ensure the `contact-attachments` bucket exists
+- Verify storage policies allow public uploads
+
+**Error: "File upload failed"**
+- Check file size is under 10MB
+- Verify MIME type is allowed
+- Ensure bucket has sufficient storage space
