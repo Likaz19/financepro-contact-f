@@ -8,7 +8,7 @@ A professional multi-step contact form for FinancePro, a financial consulting an
 3. **Responsive** - Every interaction provides immediate feedback with smooth animations and clear state changes
 
 **Complexity Level**: Light Application (multiple features with basic state)
-  - Multi-step form with conditional logic, progress tracking, and data persistence across steps
+  - Multi-step form with conditional logic, progress tracking, data persistence across steps, client-side validation, API submission with error handling, and confirmation review step
 
 ## Essential Features
 
@@ -40,19 +40,70 @@ A professional multi-step contact form for FinancePro, a financial consulting an
 - **Progression**: Display consulting options if selected → Display training options if selected → User checks items → Advance to step 4
 - **Success criteria**: Only relevant options display, both sections can show simultaneously if both interests selected
 
-### Message & Submission (Step 4)
-- **Functionality**: Free-text message field and form submission with success animation
-- **Purpose**: Allow users to provide additional context before submitting
+### Message Input (Step 4)
+- **Functionality**: Optional free-text message field with character counter and validation
+- **Purpose**: Allow users to provide additional context about their needs
 - **Trigger**: User advances from step 3
-- **Progression**: User types message → Clicks "Envoyer" → Form hides → Success screen animates in
-- **Success criteria**: Submission triggers animated checkmark and confirmation message
+- **Progression**: User types message (optional) → Character count updates → Validation checks length → Advance to confirmation
+- **Success criteria**: Character counter displays correctly, validation enforces 10-1000 character range if provided
+
+### Confirmation & Review (Step 5)
+- **Functionality**: Summary of all entered data with edit buttons for each section
+- **Purpose**: Allow users to review and verify information before submission
+- **Trigger**: User advances from step 4
+- **Progression**: Display all form data grouped by section → User clicks "Modifier" to edit any section → User clicks "Confirmer et envoyer" → API submission begins
+- **Success criteria**: All data displays accurately, edit buttons navigate to correct steps, data persists when returning
+
+### API Submission
+- **Functionality**: POST request to /api/contact endpoint with loading state and error handling
+- **Purpose**: Submit form data to backend with proper error recovery
+- **Trigger**: User clicks "Confirmer et envoyer" on confirmation step
+- **Progression**: Disable button → Show "Envoi en cours..." → Send POST request → Handle response → Show success screen or error message
+- **Success criteria**: Loading state displays during submission, success shows animated confirmation, errors display with helpful messages and retry option
 
 ## Edge Case Handling
-- **No Interest Selected**: Allow progression - users may want consulting info without specifying upfront
-- **Back Navigation**: All previously entered data preserved when navigating backwards
-- **Empty Message**: Message field is optional to reduce friction
-- **Direct URL Access**: Form always starts at step 1 with fresh state
-- **Rapid Clicking**: Debounce navigation buttons to prevent skipping steps
+- **No Interest Selected**: Validation prevents progression from step 2 until at least one interest is selected
+- **Back Navigation**: All previously entered data preserved when navigating backwards, errors cleared on navigation
+- **Empty Message**: Message field is optional but if provided must be 10-1000 characters
+- **Invalid Email/Phone**: Inline validation with specific error messages prevents progression
+- **API Failures**: Error alerts display with retry option, submission state resets to allow re-attempts
+- **Network Timeout**: Fetch errors caught and displayed with user-friendly messages
+- **Rapid Clicking**: Button disabled during submission to prevent duplicate requests
+- **Edit During Confirmation**: Users can return to any previous step from confirmation screen to modify data
+
+## Validation Rules
+Client-side validation enforces data quality before API submission:
+
+- **Name**: Required, minimum 2 characters
+- **Email**: Required, valid email format (regex: `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`)
+- **Phone**: Optional, but if provided must contain 8-15 digits (allows formatting characters)
+- **Interests**: Required, at least one selection (Consulting or Formation)
+- **Message**: Optional, but if provided must be 10-1000 characters
+- **Inline Errors**: Display immediately below invalid fields in red with specific error text
+- **Progressive Validation**: Errors clear when user starts typing corrections
+
+## API Configuration
+The form submits to a backend endpoint with the following configuration:
+
+- **Endpoint**: `/api/contact` (relative URL, configure in production)
+- **Method**: `POST`
+- **Headers**: `Content-Type: application/json`
+- **Body**: JSON payload containing all form data:
+  ```json
+  {
+    "name": "string",
+    "email": "string",
+    "phone": "string",
+    "interests": ["string"],
+    "services": ["string"],
+    "modules": ["string"],
+    "message": "string"
+  }
+  ```
+- **Success Response**: Any 2xx status code shows success screen
+- **Error Handling**: 4xx/5xx errors display error message from response body or generic fallback
+- **Loading State**: Button shows "Envoi en cours..." and disables during submission
+- **Toast Notifications**: Success/error toasts via sonner library
 
 ## Design Direction
 The design should feel corporate and trustworthy with a clean, professional aesthetic that reflects financial expertise. Clear blue tones communicate reliability and competence, while gold accents add a touch of premium quality. The interface should be minimal and focused, avoiding distractions from the form completion goal.
@@ -88,13 +139,14 @@ Animations should feel professional and purposeful - smooth transitions between 
 
 ## Component Selection
 - **Components**:
-  - Button (shadcn) - Primary and secondary variants for navigation with size="lg" for prominence
-  - Input (shadcn) - Text, email, phone fields with proper HTML5 types
-  - Textarea (shadcn) - Message field with rows={4}
+  - Button (shadcn) - Primary and secondary variants for navigation with size="lg" for prominence, ghost variant for edit buttons
+  - Input (shadcn) - Text, email, phone fields with proper HTML5 types and error state styling
+  - Textarea (shadcn) - Message field with rows={4} and maxLength={1000}
   - Checkbox (shadcn) - Interest and service selections with label wrappers
-  - Progress (shadcn) - Linear progress indicator showing form completion percentage
+  - Progress (shadcn) - Linear progress indicator showing form completion percentage (now 5 steps)
   - Card (shadcn) - Container for form with subtle shadow
-  - Label (shadcn) - Accessible field labels paired with inputs
+  - Label (shadcn) - Accessible field labels paired with inputs, required fields marked with asterisk
+  - Alert (shadcn) - Error message display for API failures with destructive variant
   
 - **Customizations**:
   - Custom step container with conditional rendering and fade animations using framer-motion
@@ -108,7 +160,8 @@ Animations should feel professional and purposeful - smooth transitions between 
   
 - **Icon Selection**:
   - CheckCircle (Phosphor) for success confirmation
-  - ArrowRight/ArrowLeft for navigation buttons (optional enhancement)
+  - Warning (Phosphor) for error alerts
+  - PencilSimple (Phosphor) for edit buttons on confirmation screen
   
 - **Spacing**: Consistent use of Tailwind spacing scale - gap-6 between form sections, gap-4 for checkbox groups, px-8 py-6 for card padding
 
