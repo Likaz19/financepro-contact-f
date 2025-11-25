@@ -61,6 +61,13 @@ A professional multi-step contact form for FinancePro, a financial consulting an
 - **Progression**: Disable button → Show "Envoi en cours..." → Send POST request → Handle response → Show success screen or error message
 - **Success criteria**: Loading state displays during submission, success shows animated confirmation, errors display with helpful messages and retry option
 
+### Footer with Contact & Social Links
+- **Functionality**: Site-wide footer displaying company information, contact details, and social media links
+- **Purpose**: Provide easy access to contact information and social channels throughout the user journey
+- **Trigger**: Visible on all screens (form and success state)
+- **Progression**: Static footer at bottom → Hover interactions on links and social icons → Click to call/email/visit social profiles
+- **Success criteria**: All contact links are clickable (phone, WhatsApp, email), social icons link to correct platforms with proper target="_blank", responsive layout adapts to mobile
+
 ## Edge Case Handling
 - **No Interest Selected**: Validation prevents progression from step 2 until at least one interest is selected
 - **Back Navigation**: All previously entered data preserved when navigating backwards, errors cleared on navigation
@@ -162,7 +169,12 @@ Animations should feel professional and purposeful - smooth transitions between 
   - CheckCircle (Phosphor) for success confirmation
   - Warning (Phosphor) for error alerts
   - PencilSimple (Phosphor) for edit buttons on confirmation screen
+  - Phone (Phosphor) for phone contact link in footer
+  - Envelope (Phosphor) for email contact link in footer
+  - MapPin (Phosphor) for location display in footer
+  - WhatsappLogo (Phosphor) for WhatsApp link in footer
+  - FacebookLogo, LinkedinLogo, InstagramLogo (Phosphor) for social media links in footer
   
-- **Spacing**: Consistent use of Tailwind spacing scale - gap-6 between form sections, gap-4 for checkbox groups, px-8 py-6 for card padding
+- **Spacing**: Consistent use of Tailwind spacing scale - gap-6 between form sections, gap-4 for checkbox groups, px-8 py-6 for card padding, gap-8 for footer grid columns
 
-- **Mobile**: Form container max-width constrains on desktop, full-width with padding on mobile. Stack all elements vertically. Buttons remain full-width on all screens for easy touch targets. Progress bar stays fixed at top visually.
+- **Mobile**: Form container max-width constrains on desktop, full-width with padding on mobile. Stack all elements vertically. Buttons remain full-width on all screens for easy touch targets. Progress bar stays fixed at top visually. Footer switches from 3-column to single-column layout on mobile.

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, Warning, PencilSimple, Phone, Envelope, MapPin, WhatsappLogo } from "@phosphor-icons/react"
+import { CheckCircle, Warning, PencilSimple } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Toaster, toast } from "sonner"
-import { FinanceProLogo } from "@/components/FinanceProLogo"
+import { Footer } from "@/components/Footer"
 
 type FormData = {
   name: string
@@ -189,119 +189,49 @@ function App() {
 
   if (submissionState === "success") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-2xl shadow-2xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="p-12 text-center"
-          >
-            <div className="flex justify-center mb-6">
-              <FinanceProLogo className="h-20 w-auto" />
-            </div>
-            
-            <div className="checkmark-circle w-24 h-24 rounded-full border-[5px] border-primary flex items-center justify-center mx-auto mb-6">
-              <CheckCircle
-                className="checkmark-icon text-primary"
-                size={52}
-                weight="bold"
-              />
-            </div>
-            <h2 className="text-3xl font-semibold text-primary mb-3">
-              Message envoyé !
-            </h2>
-            <p className="text-lg text-foreground mb-8">
-              Merci pour votre confiance. Notre équipe vous contactera
-              rapidement.
-            </p>
-            
-            <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground border-t pt-6">
-              <div className="flex items-center gap-2 flex-wrap justify-center">
-                <a 
-                  href="tel:+221764644290" 
-                  className="flex items-center gap-1 hover:text-primary transition-colors"
-                >
-                  <Phone size={16} weight="fill" />
-                  +221 76 464 42 90
-                </a>
-                <span className="hidden sm:inline">•</span>
-                <a 
-                  href="https://wa.me/221764644290" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 hover:text-primary transition-colors"
-                >
-                  <WhatsappLogo size={16} weight="fill" />
-                  WhatsApp
-                </a>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 flex items-center justify-center bg-background p-4">
+          <Card className="w-full max-w-2xl shadow-2xl">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="p-12 text-center"
+            >
+              <div className="checkmark-circle w-24 h-24 rounded-full border-[5px] border-primary flex items-center justify-center mx-auto mb-6">
+                <CheckCircle
+                  className="checkmark-icon text-primary"
+                  size={52}
+                  weight="bold"
+                />
               </div>
-              <a 
-                href="mailto:financeprofirst@gmail.com" 
-                className="flex items-center gap-1 hover:text-primary transition-colors"
-              >
-                <Envelope size={16} weight="fill" />
-                financeprofirst@gmail.com
-              </a>
-              <div className="flex items-center gap-1">
-                <MapPin size={16} weight="fill" />
-                Touba Khayra, Sénégal
-              </div>
-            </div>
-          </motion.div>
-        </Card>
+              <h2 className="text-3xl font-semibold text-primary mb-3">
+                Message envoyé !
+              </h2>
+              <p className="text-lg text-foreground">
+                Merci pour votre confiance. Notre équipe vous contactera
+                rapidement.
+              </p>
+            </motion.div>
+          </Card>
+        </div>
+        <Footer />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Toaster position="top-center" richColors />
-      <Card className="w-full max-w-2xl shadow-2xl">
-        <div className="p-8">
-          <div className="flex justify-center mb-6">
-            <FinanceProLogo className="h-24 w-auto" />
-          </div>
-          
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex items-center justify-center bg-background p-4">
+        <Toaster position="top-center" richColors />
+        <Card className="w-full max-w-2xl shadow-2xl">
+          <div className="p-8">
           <h2 className="text-3xl font-semibold text-center text-primary mb-2">
             Contactez FinancePro
           </h2>
-          <p className="text-center text-foreground mb-4">
+          <p className="text-center text-foreground mb-8">
             Consulting • Formation • Accompagnement professionnel
           </p>
-          
-          <div className="flex flex-col items-center gap-2 mb-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-              <a 
-                href="tel:+221764644290" 
-                className="flex items-center gap-1 hover:text-primary transition-colors"
-              >
-                <Phone size={16} weight="fill" />
-                +221 76 464 42 90
-              </a>
-              <span className="hidden sm:inline">•</span>
-              <a 
-                href="https://wa.me/221764644290" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 hover:text-primary transition-colors"
-              >
-                <WhatsappLogo size={16} weight="fill" />
-                WhatsApp
-              </a>
-            </div>
-            <a 
-              href="mailto:financeprofirst@gmail.com" 
-              className="flex items-center gap-1 hover:text-primary transition-colors"
-            >
-              <Envelope size={16} weight="fill" />
-              financeprofirst@gmail.com
-            </a>
-            <div className="flex items-center gap-1">
-              <MapPin size={16} weight="fill" />
-              Touba Khayra, Sénégal
-            </div>
-          </div>
 
           <Progress value={progress} className="mb-8 h-2.5" />
 
@@ -760,8 +690,10 @@ function App() {
               )}
             </AnimatePresence>
           </form>
-        </div>
-      </Card>
+          </div>
+        </Card>
+      </div>
+      <Footer />
     </div>
   )
 }
