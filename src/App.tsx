@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, Warning, PencilSimple, UploadSimple, FilePdf, FileDoc, FileImage, File as FileIcon, Trash, CaretUpDown, Check } from "@phosphor-icons/react"
+import { CheckCircle, Warning, PencilSimple, UploadSimple, FilePdf, FileDoc, FileImage, File as FileIcon, Trash, CaretUpDown, Check, GearSix } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -9,13 +9,17 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { Toaster, toast } from "sonner"
 import { Footer } from "@/components/Footer"
 import { FloatingContactButton } from "@/components/FloatingContactButton"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
+import { sendToAllWebhooks, useWebhooks, type WebhookPayload } from "@/lib/webhooks"
+import { WebhookSettings } from "@/components/WebhookSettings"
 
 type FormData = {
   name: string
@@ -211,6 +215,8 @@ function App() {
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [apiError, setApiError] = useState<string>("")
   const [countryCodeOpen, setCountryCodeOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [webhooks] = useWebhooks()
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -348,6 +354,38 @@ function App() {
           if (uploadError) {
             console.error("Erreur lors du téléchargement du fichier:", uploadError)
           }
+        }
+      }
+
+      if (webhooks && webhooks.length > 0) {
+        const webhookPayload: WebhookPayload = {
+          formData: {
+            name: formData.name,
+            email: formData.email,
+            countryCode: formData.countryCode,
+            phone: formData.phone,
+            interests: formData.interests,
+            services: formData.services,
+            modules: formData.modules,
+            message: formData.message,
+          },
+          submittedAt: new Date().toISOString(),
+          attachmentCount: formData.attachments.length,
+        }
+
+        const webhookResults = await sendToAllWebhooks(webhooks, webhookPayload)
+        
+        const failedWebhooks = webhookResults.filter(r => !r.success)
+        if (failedWebhooks.length > 0) {
+          console.warn("Certains webhooks ont échoué:", failedWebhooks)
+          failedWebhooks.forEach(result => {
+            toast.warning(`Webhook ${result.webhookName}: ${result.error}`)
+          })
+        }
+        
+        const successWebhooks = webhookResults.filter(r => r.success)
+        if (successWebhooks.length > 0) {
+          console.log(`${successWebhooks.length} webhook(s) envoyé(s) avec succès`)
         }
       }
 
@@ -506,12 +544,35 @@ function App() {
         <Toaster position="top-center" richColors />
         <Card className="w-full max-w-2xl shadow-2xl">
           <div className="p-8">
-          <h2 className="text-3xl font-semibold text-center text-primary mb-2">
-            Contactez FinancePro
-          </h2>
-          <p className="text-center text-foreground mb-8">
-            Consulting • Formation • Accompagnement professionnel
-          </p>
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <h2 className="text-3xl font-semibold text-primary">
+                Contactez FinancePro
+              </h2>
+              <p className="text-foreground mt-1">
+                Consulting • Formation • Accompagnement professionnel
+              </p>
+            </div>
+            <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 -mt-1 relative">
+                  <GearSix size={20} weight="bold" />
+                  Webhooks
+                  {webhooks && webhooks.filter(w => w.enabled).length > 0 && (
+                    <Badge variant="default" className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-xs">
+                      {webhooks.filter(w => w.enabled).length}
+                    </Badge>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Configuration des webhooks</DialogTitle>
+                </DialogHeader>
+                <WebhookSettings />
+              </DialogContent>
+            </Dialog>
+          </div>
 
           <Progress value={progress} className="mb-8 h-2.5" />
 

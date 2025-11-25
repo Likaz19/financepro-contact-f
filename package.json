@@ -9,8 +9,7 @@
         "build": "tsc -b --noCheck && vite build",
         "lint": "eslint .",
         "optimize": "vite optimize",
-        "preview": "vite preview",
-        "test:supabase": "tsx test-supabase.ts"
+        "preview": "vite preview"
     },
     "dependencies": {
         "@github/spark": "^0.39.0",

@@ -1,88 +1,100 @@
-# FinancePro Contact Form
+# FinancePro - Formulaire de Contact Multi-étapes
 
-A professional, multi-step contact form for FinancePro with Supabase backend integration.
+Un formulaire de contact professionnel pour FinancePro avec intégration Supabase et webhooks pour l'automatisation.
 
-## 🚀 Features
+## 🌟 Fonctionnalités
 
-- **Multi-step wizard** with progress tracking
-- **International phone validation** (100+ countries)
-- **File attachments** (up to 5 files, 10MB each)
-- **Real-time validation** with helpful error messages
-- **Supabase integration** for data storage
-- **Responsive design** with smooth animations
-- **Professional UI** using shadcn components
+- ✅ Formulaire multi-étapes avec validation
+- ✅ Téléchargement de fichiers (jusqu'à 5 fichiers, 10 Mo chacun)
+- ✅ Sélection intelligente du code pays (70+ pays)
+- ✅ Validation en temps réel des champs
+- ✅ Écran de confirmation avant envoi
+- ✅ Intégration Supabase (base de données + stockage)
+- ✅ **Webhooks pour services externes (Zapier, Make.com, APIs personnalisées)**
+- ✅ Logs des envois webhook
+- ✅ Animations fluides et professionnelles
+- ✅ Responsive (mobile et desktop)
 
-## 📋 Quick Start
+## 🔗 Intégration Webhook
 
-### 1. Supabase Setup (First Time Only)
+Le formulaire supporte l'envoi automatique des données vers des services externes via webhooks.
 
-Choose the guide that fits your needs:
+### Configuration Rapide
 
-- **Fast Track**: [`QUICK_SETUP.md`](./QUICK_SETUP.md) - Get started in 5 minutes
-- **Detailed Guide**: [`SUPABASE_SETUP.md`](./SUPABASE_SETUP.md) - Complete documentation
-- **Checklist**: [`SETUP_CHECKLIST.md`](./SETUP_CHECKLIST.md) - Track your progress
+1. Cliquez sur le bouton **"Webhooks"** dans le formulaire
+2. Ajoutez un ou plusieurs webhooks avec:
+   - Nom descriptif
+   - URL du webhook
+   - En-têtes personnalisés (optionnel)
+3. Activez/désactivez les webhooks selon vos besoins
+4. Testez avec le bouton "Tester"
+5. Consultez l'historique des envois
 
-**Quick Setup:**
-1. Open [Supabase Dashboard](https://rzudotbbfoklxcebghan.supabase.co)
-2. Go to SQL Editor → New Query
-3. Copy contents of `supabase-setup.sql`
-4. Paste and Run
-5. Verify storage bucket `contact-attachments` exists
+### Format du Payload
 
-### 2. Run the Application
+Les webhooks reçoivent un POST JSON:
+
+```json
+{
+  "formData": {
+    "name": "Jean Dupont",
+    "email": "jean.dupont@example.com",
+    "countryCode": "+221",
+    "phone": "764644290",
+    "interests": ["Consulting", "Formation"],
+    "services": ["Audit financier"],
+    "modules": ["Comptabilité fondamentale"],
+    "message": "Message du client"
+  },
+  "submittedAt": "2024-01-15T10:30:00.000Z",
+  "attachmentCount": 2
+}
+```
+
+### Documentation Complète
+
+- **[WEBHOOK_GUIDE.md](./WEBHOOK_GUIDE.md)** - Guide complet des webhooks
+- **[WEBHOOK_QUICK_START.md](./WEBHOOK_QUICK_START.md)** - Configuration rapide pour Zapier, Make.com, Slack, etc.
+
+## 📋 Services Intégrables
+
+- **Zapier** - Automatisation no-code
+- **Make.com** - Workflows complexes
+- **n8n** - Solution self-hosted
+- **Slack/Discord** - Notifications d'équipe
+- **API personnalisée** - Votre propre backend
+
+## 🚀 Démarrage Rapide
+
+### Prérequis
+
+1. Compte Supabase configuré (voir [SUPABASE_SETUP.md](./SUPABASE_SETUP.md))
+2. (Optionnel) Compte Zapier/Make.com pour les webhooks
+
+### Installation
 
 ```bash
 npm install
 npm run dev
 ```
 
-Visit the application and test by submitting a contact form.
+### Configuration Supabase
 
-## 📁 Project Structure
+Voir [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) pour les instructions complètes.
 
-- `src/App.tsx` - Main form component
-- `src/lib/supabase.ts` - Supabase client configuration
-- `supabase-setup.sql` - Database setup script
-- `QUICK_SETUP.md` - Quick setup guide
-- `SUPABASE_SETUP.md` - Detailed setup documentation
+### Configuration Webhook (Optionnel)
 
-## 🔧 Configuration
+1. Accédez au formulaire
+2. Cliquez sur "Webhooks"
+3. Ajoutez vos intégrations
+4. Testez avec le bouton "Tester"
 
-The application is pre-configured with:
-- **Supabase URL**: https://rzudotbbfoklxcebghan.supabase.co
-- **API Key**: Already configured in `src/lib/supabase.ts`
+## 📞 Contact FinancePro
 
-## 📊 Viewing Submissions
-
-### In Supabase Dashboard:
-1. Go to **Table Editor** → `contact_submissions`
-2. View, filter, and export submissions
-
-### Via SQL:
-```sql
-SELECT * FROM contact_submissions 
-ORDER BY created_at DESC;
-```
-
-## 🎨 What's Inside?
-
-- **React 19** with TypeScript
-- **Tailwind CSS** for styling
-- **shadcn/ui** components
-- **Framer Motion** for animations
-- **Supabase** for backend
-- **Phosphor Icons** for UI icons
-
-## 🐛 Troubleshooting
-
-See [`QUICK_SETUP.md`](./QUICK_SETUP.md) for common issues and solutions.
-
-## 🧹 Just Exploring?
-
-No problem! If you were just checking things out and don't need to keep this code:
-
-- Simply delete your Spark.
-- Everything will be cleaned up — no traces left behind.
+- 📱 Téléphone: +221 76 464 42 90
+- 💬 WhatsApp: +221 76 464 42 90
+- 📧 Email: financeprofirst@gmail.com
+- 📍 Adresse: Touba Khayra, Sénégal
 
 ## 📄 License
 

@@ -62,11 +62,11 @@ A professional multi-step contact form for FinancePro, a financial consulting an
 - **Success criteria**: All data displays accurately including attachment file names and sizes, edit buttons navigate to correct steps, data and files persist when returning
 
 ### API Submission
-- **Functionality**: Supabase database insert to `contact_submissions` table with file upload to storage bucket, loading state and error handling
-- **Purpose**: Submit form data including file attachments to Supabase backend with proper error recovery
+- **Functionality**: Supabase database insert to `contact_submissions` table with file upload to storage bucket, webhook integration to external services, loading state and error handling
+- **Purpose**: Submit form data including file attachments to Supabase backend and configured webhooks with proper error recovery
 - **Trigger**: User clicks "Confirmer et envoyer" on confirmation step
-- **Progression**: Disable button → Show "Envoi en cours..." → Insert data to Supabase → Upload files to storage → Handle response → Show success screen or error message
-- **Success criteria**: Loading state displays during submission, files are properly uploaded to Supabase Storage bucket, success shows animated confirmation, errors display with helpful messages and retry option
+- **Progression**: Disable button → Show "Envoi en cours..." → Insert data to Supabase → Upload files to storage → Send to enabled webhooks → Handle responses → Show success screen or error message
+- **Success criteria**: Loading state displays during submission, files are properly uploaded to Supabase Storage bucket, webhooks receive POST requests with form data, success shows animated confirmation, errors display with helpful messages and retry option, webhook failures show warnings but don't block submission
 
 ### Footer with Contact & Social Links
 - **Functionality**: Site-wide footer displaying company information, contact details, and social media links
@@ -74,6 +74,13 @@ A professional multi-step contact form for FinancePro, a financial consulting an
 - **Trigger**: Visible on all screens (form and success state)
 - **Progression**: Static footer at bottom → Hover interactions on links and social icons → Click to call/email/visit social profiles
 - **Success criteria**: All contact links are clickable (phone, WhatsApp, email), social icons link to correct platforms with proper target="_blank", responsive layout adapts to mobile
+
+### Webhook Integration
+- **Functionality**: Configure and manage external webhooks to receive form submissions, view delivery logs and status
+- **Purpose**: Enable integration with third-party services (Zapier, Make.com, custom APIs) for automated workflows
+- **Trigger**: Click "Webhooks" button in form header
+- **Progression**: Open settings dialog → Add/edit/delete webhooks → Configure URL and headers → Enable/disable webhooks → View delivery logs → Close dialog
+- **Success criteria**: Webhooks can be added with name and URL, custom headers support JSON format, webhooks can be toggled on/off, webhooks receive POST with form data on submission, delivery logs show success/failure with timestamps and error messages, failed webhooks don't block form submission, copy example payload feature works
 
 ## Edge Case Handling
 - **No Interest Selected**: Validation prevents progression from step 2 until at least one interest is selected
@@ -88,6 +95,11 @@ A professional multi-step contact form for FinancePro, a financial consulting an
 - **Network Timeout**: Fetch errors caught and displayed with user-friendly messages
 - **Rapid Clicking**: Button disabled during submission to prevent duplicate requests
 - **Edit During Confirmation**: Users can return to any previous step from confirmation screen to modify data and files
+- **Webhook Failures**: Failed webhooks show warning toasts but don't block submission, successful Supabase insert is prioritized
+- **Invalid Webhook URL**: URL validation prevents adding malformed webhook URLs
+- **Webhook Timeout**: 10 second timeout per webhook prevents hanging
+- **No Webhooks Configured**: Form works normally without any webhooks, integration is optional
+- **Multiple Webhooks**: All enabled webhooks fire in parallel, individual failures don't affect others
 
 ## Validation Rules
 Client-side validation enforces data quality before API submission:
@@ -102,8 +114,9 @@ Client-side validation enforces data quality before API submission:
 - **Progressive Validation**: Errors clear when user starts typing corrections or removes problematic files
 
 ## API Configuration
-The form is integrated with Supabase for real-time data persistence and file storage:
+The form is integrated with Supabase for real-time data persistence and file storage, plus supports webhook integrations for external services:
 
+### Supabase Backend
 - **Database**: Supabase PostgreSQL database
 - **Table**: `contact_submissions` - stores all form submission data
 - **Storage Bucket**: `contact-attachments` - stores uploaded files
@@ -118,7 +131,19 @@ The form is integrated with Supabase for real-time data persistence and file sto
 - **Loading State**: Button shows "Envoi en cours..." and disables during submission
 - **Toast Notifications**: Success/error toasts via sonner library
 
+### Webhook Integration
+- **Configuration**: Stored in browser using `useKV` hook with key 'webhooks'
+- **Management UI**: Accessible via "Webhooks" button in form header
+- **Webhook Structure**: Each webhook has id, name, url, enabled status, optional custom headers, and creation timestamp
+- **Payload Format**: JSON POST with formData object, submittedAt timestamp, and attachmentCount
+- **Delivery**: All enabled webhooks fire in parallel after successful Supabase submission
+- **Timeout**: 10 second timeout per webhook request
+- **Error Handling**: Individual webhook failures log warnings but don't block submission
+- **Logs**: Last 100 webhook delivery attempts stored with status, timestamp, and error details
+- **Headers**: Support for custom HTTP headers (e.g., Authorization tokens) in JSON format
+
 See `API_SETUP.md` for detailed database schema and storage bucket configuration instructions.
+See `WEBHOOK_GUIDE.md` for webhook integration examples and troubleshooting.
 
 ## Design Direction
 The design should feel corporate and trustworthy with a clean, professional aesthetic that reflects financial expertise. Clear blue tones communicate reliability and competence, while gold accents add a touch of premium quality. The interface should be minimal and focused, avoiding distractions from the form completion goal.
@@ -177,17 +202,21 @@ Animations should feel professional and purposeful - smooth transitions between 
   - File upload area: Default (dashed border), hover (primary border), has files (file list visible)
   
 - **Icon Selection**:
-  - CheckCircle (Phosphor) for success confirmation
-  - Warning (Phosphor) for error alerts
-  - PencilSimple (Phosphor) for edit buttons on confirmation screen
+  - CheckCircle (Phosphor) for success confirmation and webhook success status
+  - Warning (Phosphor) for error alerts and webhook failures
+  - PencilSimple (Phosphor) for edit buttons on confirmation screen and webhook edit
   - UploadSimple (Phosphor) for file upload area
   - FilePdf, FileDoc, FileImage, File (Phosphor) for file type indicators in preview
-  - Trash (Phosphor) for file removal buttons
+  - Trash (Phosphor) for file removal and webhook deletion buttons
   - Phone (Phosphor) for phone contact link in footer
   - Envelope (Phosphor) for email contact link in footer
   - MapPin (Phosphor) for location display in footer
   - WhatsappLogo (Phosphor) for WhatsApp link in footer
   - FacebookLogo, LinkedinLogo, InstagramLogo (Phosphor) for social media links in footer
+  - GearSix (Phosphor) for webhook settings button
+  - WebhooksLogo (Phosphor) for webhook configuration interface
+  - Copy (Phosphor) for copy example payload button
+  - Clock (Phosphor) for webhook logs empty state
   
 - **Spacing**: Consistent use of Tailwind spacing scale - gap-6 between form sections, gap-4 for checkbox groups, px-8 py-6 for card padding, gap-8 for footer grid columns, gap-3 for file list items
 

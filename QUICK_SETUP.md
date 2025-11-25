@@ -157,6 +157,9 @@ WHERE message IS NOT NULL AND message != '';
 2. **Create an admin dashboard** to manage submissions
 3. **Export data** regularly for backup
 4. **Monitor usage** via Supabase logs
+5. **Configure webhooks** to send data to external services (Zapier, Make.com, etc.)
+   - See [WEBHOOK_QUICK_START.md](./WEBHOOK_QUICK_START.md) for setup guides
+   - See [WEBHOOK_TESTING.md](./WEBHOOK_TESTING.md) to test with free tools
 
 ## 📞 Support
 
