@@ -48,38 +48,65 @@ export function FloatingContactButton() {
         )}
       </AnimatePresence>
 
-      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-        <Button
-          onClick={toggleMenu}
-          size="lg"
-          className="w-16 h-16 rounded-full shadow-2xl hover:shadow-xl transition-all duration-300 p-0"
-          aria-label={isOpen ? "Fermer le menu de contact" : "Ouvrir le menu de contact"}
-        >
-          <AnimatePresence mode="wait">
-            {isOpen ? (
-              <motion.div
-                key="close"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <X size={28} weight="bold" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="phone"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Phone size={28} weight="bold" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Button>
-      </motion.div>
+      <div className="relative">
+        <motion.div
+          className="absolute inset-0 rounded-full bg-primary"
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.7, 0, 0.7],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute inset-0 rounded-full bg-primary"
+          animate={{
+            scale: [1, 1.5, 1],
+            opacity: [0.5, 0, 0.5],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0.5,
+          }}
+        />
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="relative">
+          <Button
+            onClick={toggleMenu}
+            size="lg"
+            className="w-16 h-16 rounded-full shadow-2xl hover:shadow-xl transition-all duration-300 p-0"
+            aria-label={isOpen ? "Fermer le menu de contact" : "Ouvrir le menu de contact"}
+          >
+            <AnimatePresence mode="wait">
+              {isOpen ? (
+                <motion.div
+                  key="close"
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <X size={28} weight="bold" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="phone"
+                  initial={{ rotate: -90, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Phone size={28} weight="bold" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Button>
+        </motion.div>
+      </div>
     </div>
   )
 }
