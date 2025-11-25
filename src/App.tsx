@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, Warning, PencilSimple, UploadSimple, FilePdf, FileDoc, FileImage, File as FileIcon, Trash } from "@phosphor-icons/react"
+import { CheckCircle, Warning, PencilSimple, UploadSimple, FilePdf, FileDoc, FileImage, File as FileIcon, Trash, CaretUpDown, Check } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -9,10 +9,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Toaster, toast } from "sonner"
 import { Footer } from "@/components/Footer"
 import { FloatingContactButton } from "@/components/FloatingContactButton"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { cn } from "@/lib/utils"
 
 type FormData = {
   name: string
@@ -207,6 +209,7 @@ function App() {
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle")
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [apiError, setApiError] = useState<string>("")
+  const [countryCodeOpen, setCountryCodeOpen] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -553,27 +556,55 @@ function App() {
                       Téléphone
                     </Label>
                     <div className="flex gap-2 mt-2">
-                      <Select 
-                        value={formData.countryCode} 
-                        onValueChange={(value) => {
-                          setFormData({ ...formData, countryCode: value })
-                          if (errors.phone) setErrors({ ...errors, phone: undefined })
-                        }}
-                      >
-                        <SelectTrigger className={`w-[180px] ${errors.phone ? "border-destructive" : ""}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {COUNTRY_CODES.map((country) => (
-                            <SelectItem key={country.code} value={country.code}>
-                              <span className="flex items-center gap-2">
-                                <span>{country.flag}</span>
-                                <span>{country.code}</span>
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={countryCodeOpen} onOpenChange={setCountryCodeOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={countryCodeOpen}
+                            className={`w-[180px] justify-between ${errors.phone ? "border-destructive" : ""}`}
+                          >
+                            <span className="flex items-center gap-2 truncate">
+                              <span>{COUNTRY_CODES.find(c => c.code === formData.countryCode)?.flag}</span>
+                              <span>{formData.countryCode}</span>
+                            </span>
+                            <CaretUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Rechercher un pays..." />
+                            <CommandList>
+                              <CommandEmpty>Aucun pays trouvé.</CommandEmpty>
+                              <CommandGroup>
+                                {COUNTRY_CODES.map((country) => (
+                                  <CommandItem
+                                    key={country.code}
+                                    value={`${country.name} ${country.code}`}
+                                    onSelect={() => {
+                                      setFormData({ ...formData, countryCode: country.code })
+                                      if (errors.phone) setErrors({ ...errors, phone: undefined })
+                                      setCountryCodeOpen(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        formData.countryCode === country.code ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <span className="flex items-center gap-2">
+                                      <span>{country.flag}</span>
+                                      <span className="flex-1">{country.name}</span>
+                                      <span className="text-muted-foreground">{country.code}</span>
+                                    </span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <Input
                         id="phone"
                         type="tel"
