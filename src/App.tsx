@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Toaster, toast } from "sonner"
 import { Footer } from "@/components/Footer"
 import { FloatingContactButton } from "@/components/FloatingContactButton"
@@ -16,6 +17,7 @@ import { FloatingContactButton } from "@/components/FloatingContactButton"
 type FormData = {
   name: string
   email: string
+  countryCode: string
   phone: string
   interests: string[]
   services: string[]
@@ -33,7 +35,28 @@ type ValidationErrors = {
   attachments?: string
 }
 
+type CountryCode = {
+  code: string
+  name: string
+  flag: string
+  pattern: RegExp
+  format: string
+}
+
 type SubmissionState = "idle" | "submitting" | "success" | "error"
+
+const COUNTRY_CODES: CountryCode[] = [
+  { code: "+221", name: "Sénégal", flag: "🇸🇳", pattern: /^[0-9]{9}$/, format: "XX XXX XX XX" },
+  { code: "+33", name: "France", flag: "🇫🇷", pattern: /^[0-9]{9}$/, format: "X XX XX XX XX" },
+  { code: "+1", name: "États-Unis/Canada", flag: "🇺🇸", pattern: /^[0-9]{10}$/, format: "XXX XXX XXXX" },
+  { code: "+44", name: "Royaume-Uni", flag: "🇬🇧", pattern: /^[0-9]{10}$/, format: "XXXX XXX XXX" },
+  { code: "+49", name: "Allemagne", flag: "🇩🇪", pattern: /^[0-9]{10,11}$/, format: "XXX XXXXXXX" },
+  { code: "+32", name: "Belgique", flag: "🇧🇪", pattern: /^[0-9]{9}$/, format: "XXX XX XX XX" },
+  { code: "+41", name: "Suisse", flag: "🇨🇭", pattern: /^[0-9]{9}$/, format: "XX XXX XX XX" },
+  { code: "+34", name: "Espagne", flag: "🇪🇸", pattern: /^[0-9]{9}$/, format: "XXX XX XX XX" },
+  { code: "+212", name: "Maroc", flag: "🇲🇦", pattern: /^[0-9]{9}$/, format: "XX XXX XXXX" },
+  { code: "+225", name: "Côte d'Ivoire", flag: "🇨🇮", pattern: /^[0-9]{10}$/, format: "XX XX XX XX XX" },
+]
 
 function App() {
   const [currentStep, setCurrentStep] = useState(0)
@@ -43,6 +66,7 @@ function App() {
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
+    countryCode: "+221",
     phone: "",
     interests: [],
     services: [],
@@ -68,9 +92,14 @@ function App() {
       }
 
       if (formData.phone.trim()) {
+        const selectedCountry = COUNTRY_CODES.find(c => c.code === formData.countryCode)
         const phoneDigits = formData.phone.replace(/\D/g, "")
-        if (phoneDigits.length < 8 || phoneDigits.length > 15) {
-          newErrors.phone = "Le téléphone doit contenir entre 8 et 15 chiffres"
+        
+        if (!selectedCountry) {
+          newErrors.phone = "Veuillez sélectionner un code pays valide"
+        } else if (!selectedCountry.pattern.test(phoneDigits)) {
+          const expectedLength = selectedCountry.pattern.source.match(/\{(\d+)(,\d+)?\}/)?.[1] || "N"
+          newErrors.phone = `Format invalide. Attendu: ${selectedCountry.format} (${phoneDigits.length} chiffres saisis)`
         }
       }
     }
@@ -140,6 +169,7 @@ function App() {
       const formDataToSend = new FormData()
       formDataToSend.append("name", formData.name)
       formDataToSend.append("email", formData.email)
+      formDataToSend.append("countryCode", formData.countryCode)
       formDataToSend.append("phone", formData.phone)
       formDataToSend.append("interests", JSON.stringify(formData.interests))
       formDataToSend.append("services", JSON.stringify(formData.services))
@@ -378,19 +408,47 @@ function App() {
                     <Label htmlFor="phone" className="text-base font-semibold">
                       Téléphone
                     </Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => {
-                        updateField("phone", e.target.value)
-                        if (errors.phone) setErrors({ ...errors, phone: undefined })
-                      }}
-                      placeholder="76 464 42 90"
-                      className={`mt-2 ${errors.phone ? "border-destructive" : ""}`}
-                    />
+                    <div className="flex gap-2 mt-2">
+                      <Select 
+                        value={formData.countryCode} 
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, countryCode: value })
+                          if (errors.phone) setErrors({ ...errors, phone: undefined })
+                        }}
+                      >
+                        <SelectTrigger className={`w-[180px] ${errors.phone ? "border-destructive" : ""}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRY_CODES.map((country) => (
+                            <SelectItem key={country.code} value={country.code}>
+                              <span className="flex items-center gap-2">
+                                <span>{country.flag}</span>
+                                <span>{country.code}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => {
+                          updateField("phone", e.target.value)
+                          if (errors.phone) setErrors({ ...errors, phone: undefined })
+                        }}
+                        placeholder={COUNTRY_CODES.find(c => c.code === formData.countryCode)?.format || "XX XXX XX XX"}
+                        className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
+                      />
+                    </div>
                     {errors.phone && (
                       <p className="text-destructive text-sm mt-1">{errors.phone}</p>
+                    )}
+                    {formData.phone && !errors.phone && (
+                      <p className="text-muted-foreground text-xs mt-1">
+                        Numéro complet: {formData.countryCode} {formData.phone}
+                      </p>
                     )}
                   </div>
 
@@ -783,7 +841,7 @@ function App() {
                       <div className="space-y-1 text-sm">
                         <p><span className="font-medium">Nom:</span> {formData.name}</p>
                         <p><span className="font-medium">Email:</span> {formData.email}</p>
-                        {formData.phone && <p><span className="font-medium">Téléphone:</span> {formData.phone}</p>}
+                        {formData.phone && <p><span className="font-medium">Téléphone:</span> {formData.countryCode} {formData.phone}</p>}
                       </div>
                     </div>
 
