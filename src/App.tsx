@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, Warning, PencilSimple } from "@phosphor-icons/react"
+import { CheckCircle, Warning, PencilSimple, UploadSimple, FilePdf, FileDoc, FileImage, File as FileIcon, Trash } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,6 +21,7 @@ type FormData = {
   services: string[]
   modules: string[]
   message: string
+  attachments: File[]
 }
 
 type ValidationErrors = {
@@ -29,6 +30,7 @@ type ValidationErrors = {
   phone?: string
   message?: string
   interests?: string
+  attachments?: string
 }
 
 type SubmissionState = "idle" | "submitting" | "success" | "error"
@@ -46,9 +48,10 @@ function App() {
     services: [],
     modules: [],
     message: "",
+    attachments: [],
   })
 
-  const totalSteps = 5
+  const totalSteps = 6
   const progress = ((currentStep + 1) / totalSteps) * 100
 
   const validateStep = (step: number): boolean => {
@@ -84,6 +87,17 @@ function App() {
       }
       if (formData.message.trim().length > 1000) {
         newErrors.message = "Le message ne peut pas dépasser 1000 caractères"
+      }
+    }
+
+    if (step === 4) {
+      if (formData.attachments.length > 5) {
+        newErrors.attachments = "Vous ne pouvez joindre que 5 fichiers maximum"
+      }
+      const maxSize = 10 * 1024 * 1024
+      const hasOversizedFile = formData.attachments.some(file => file.size > maxSize)
+      if (hasOversizedFile) {
+        newErrors.attachments = "Chaque fichier ne doit pas dépasser 10 Mo"
       }
     }
 
@@ -123,12 +137,22 @@ function App() {
     setApiError("")
 
     try {
+      const formDataToSend = new FormData()
+      formDataToSend.append("name", formData.name)
+      formDataToSend.append("email", formData.email)
+      formDataToSend.append("phone", formData.phone)
+      formDataToSend.append("interests", JSON.stringify(formData.interests))
+      formDataToSend.append("services", JSON.stringify(formData.services))
+      formDataToSend.append("modules", JSON.stringify(formData.modules))
+      formDataToSend.append("message", formData.message)
+      
+      formData.attachments.forEach((file, index) => {
+        formDataToSend.append(`attachment_${index}`, file)
+      })
+
       const response = await fetch("/api/contact", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        body: formDataToSend,
       })
 
       if (!response.ok) {
@@ -183,6 +207,70 @@ function App() {
         ? prev.modules.filter((m) => m !== module)
         : [...prev.modules, module],
     }))
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    const newFiles = Array.from(files)
+    const currentFiles = formData.attachments
+    const totalFiles = currentFiles.length + newFiles.length
+
+    if (totalFiles > 5) {
+      toast.error("Vous ne pouvez joindre que 5 fichiers maximum")
+      return
+    }
+
+    const maxSize = 10 * 1024 * 1024
+    const oversizedFiles = newFiles.filter(file => file.size > maxSize)
+    
+    if (oversizedFiles.length > 0) {
+      toast.error("Chaque fichier ne doit pas dépasser 10 Mo")
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      attachments: [...prev.attachments, ...newFiles],
+    }))
+    
+    if (errors.attachments) {
+      setErrors({ ...errors, attachments: undefined })
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index),
+    }))
+  }
+
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase()
+    switch (extension) {
+      case 'pdf':
+        return <FilePdf size={24} weight="fill" className="text-destructive" />
+      case 'doc':
+      case 'docx':
+        return <FileDoc size={24} weight="fill" className="text-primary" />
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return <FileImage size={24} weight="fill" className="text-accent-foreground" />
+      default:
+        return <FileIcon size={24} weight="fill" className="text-muted-foreground" />
+    }
+  }
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
   }
 
   const showConsulting = formData.interests.includes("Consulting")
@@ -563,6 +651,109 @@ function App() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
+                  className="space-y-5"
+                >
+                  <div>
+                    <Label className="text-base font-semibold">
+                      Joindre des fichiers (optionnel)
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1 mb-3">
+                      Vous pouvez joindre jusqu'à 5 fichiers (max. 10 Mo chacun)
+                    </p>
+                    
+                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer bg-muted/20">
+                      <input
+                        type="file"
+                        id="file-upload"
+                        multiple
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt,.xlsx,.xls"
+                      />
+                      <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                          <UploadSimple size={32} weight="bold" className="text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-base font-semibold text-foreground">
+                            Cliquez pour sélectionner des fichiers
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            PDF, Word, Images, etc.
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {errors.attachments && (
+                      <p className="text-destructive text-sm mt-2">{errors.attachments}</p>
+                    )}
+
+                    {formData.attachments.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <p className="text-sm font-semibold text-foreground">
+                          Fichiers joints ({formData.attachments.length}/5)
+                        </p>
+                        {formData.attachments.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-3 bg-muted rounded-lg group hover:bg-muted/80 transition-colors"
+                          >
+                            <div className="flex-shrink-0">
+                              {getFileIcon(file.name)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatFileSize(file.size)}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFile(index)}
+                              className="flex-shrink-0 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash size={18} weight="bold" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <Button
+                      type="button"
+                      onClick={handleNext}
+                      size="lg"
+                      className="w-full text-lg"
+                    >
+                      Suivant
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handlePrev}
+                      variant="secondary"
+                      size="lg"
+                      className="w-full text-lg bg-accent text-accent-foreground hover:bg-accent/90"
+                    >
+                      Retour
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+
+              {currentStep === 5 && (
+                <motion.div
+                  key="step6"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
                   className="space-y-6"
                 >
                   <div>
@@ -657,6 +848,39 @@ function App() {
                           </Button>
                         </div>
                         <p className="text-sm whitespace-pre-wrap">{formData.message}</p>
+                      </div>
+                    )}
+
+                    {formData.attachments.length > 0 && (
+                      <div className="border-l-4 border-secondary pl-4 py-2">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-semibold text-foreground">Fichiers joints</h4>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditStep(4)}
+                            className="h-8 gap-1"
+                          >
+                            <PencilSimple size={16} />
+                            Modifier
+                          </Button>
+                        </div>
+                        <div className="space-y-2">
+                          {formData.attachments.map((file, index) => (
+                            <div key={index} className="flex items-center gap-2 text-sm">
+                              <div className="flex-shrink-0">
+                                {getFileIcon(file.name)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate">{file.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatFileSize(file.size)}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
