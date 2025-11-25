@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Toaster, toast } from "sonner"
 import { Footer } from "@/components/Footer"
+import { FloatingContactButton } from "@/components/FloatingContactButton"
 
 type FormData = {
   name: string
@@ -216,6 +217,7 @@ function App() {
           </Card>
         </div>
         <Footer />
+        <FloatingContactButton />
       </div>
     )
   }
@@ -694,6 +696,7 @@ function App() {
         </Card>
       </div>
       <Footer />
+      <FloatingContactButton />
     </div>
   )
 }
