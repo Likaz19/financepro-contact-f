@@ -10,25 +10,47 @@ Un formulaire de contact professionnel pour FinancePro avec intégration Supabas
 - ✅ Validation en temps réel des champs
 - ✅ Écran de confirmation avant envoi
 - ✅ Intégration Supabase (base de données + stockage)
+- ✅ **Notifications email automatiques pour chaque soumission**
 - ✅ **Webhooks pour services externes (Zapier, Make.com, APIs personnalisées)**
-- ✅ Logs des envois webhook
+- ✅ Logs des envois (email + webhook)
 - ✅ Animations fluides et professionnelles
 - ✅ Responsive (mobile et desktop)
 
-## 🔗 Intégration Webhook
+## 🔔 Notifications
 
-Le formulaire supporte l'envoi automatique des données vers des services externes via webhooks.
+Le formulaire supporte deux types de notifications:
 
-### Configuration Rapide
+### 📧 Email Notifications
 
-1. Cliquez sur le bouton **"Webhooks"** dans le formulaire
-2. Ajoutez un ou plusieurs webhooks avec:
-   - Nom descriptif
-   - URL du webhook
-   - En-têtes personnalisés (optionnel)
-3. Activez/désactivez les webhooks selon vos besoins
-4. Testez avec le bouton "Tester"
-5. Consultez l'historique des envois
+Recevez un email pré-formaté dans votre client email pour chaque soumission.
+
+**Configuration Rapide:**
+1. Cliquez sur **"Notifications"** → onglet **"Emails"**
+2. Ajoutez votre adresse email
+3. Testez avec le bouton "Test"
+4. ✅ Prêt! Votre client email s'ouvrira avec les détails du formulaire
+
+**Idéal pour:** Alertes personnelles, suivi manuel, notifications mobiles
+
+**Documentation:**
+- **[EMAIL_QUICK_START.md](./EMAIL_QUICK_START.md)** - Configuration en 2 minutes
+- **[EMAIL_NOTIFICATIONS.md](./EMAIL_NOTIFICATIONS.md)** - Guide complet
+
+### 🔗 Webhooks
+
+Envoyez automatiquement les données vers des services externes.
+
+**Configuration Rapide:**
+1. Cliquez sur **"Notifications"** → onglet **"Webhooks"**
+2. Ajoutez l'URL de votre webhook
+3. Configurez les en-têtes (optionnel)
+4. Testez et activez
+
+**Idéal pour:** Intégrations automatiques, CRM, bases de données, Slack
+
+**Documentation:**
+- **[WEBHOOK_QUICK_START.md](./WEBHOOK_QUICK_START.md)** - Configuration rapide
+- **[WEBHOOK_GUIDE.md](./WEBHOOK_GUIDE.md)** - Guide complet
 
 ### Format du Payload
 
@@ -58,18 +80,26 @@ Les webhooks reçoivent un POST JSON:
 
 ## 📋 Services Intégrables
 
+### Via Email
+- Gmail, Outlook, Apple Mail
+- Tout client email desktop ou mobile
+- Notifications instantanées
+
+### Via Webhooks
 - **Zapier** - Automatisation no-code
 - **Make.com** - Workflows complexes
 - **n8n** - Solution self-hosted
 - **Slack/Discord** - Notifications d'équipe
 - **API personnalisée** - Votre propre backend
+- **CRM** - Salesforce, HubSpot, etc.
 
 ## 🚀 Démarrage Rapide
 
 ### Prérequis
 
 1. Compte Supabase configuré (voir [SUPABASE_SETUP.md](./SUPABASE_SETUP.md))
-2. (Optionnel) Compte Zapier/Make.com pour les webhooks
+2. (Optionnel) Adresse email pour notifications
+3. (Optionnel) Compte Zapier/Make.com pour webhooks
 
 ### Installation
 
@@ -82,12 +112,13 @@ npm run dev
 
 Voir [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) pour les instructions complètes.
 
-### Configuration Webhook (Optionnel)
+### Configuration Notifications (Optionnel)
 
 1. Accédez au formulaire
-2. Cliquez sur "Webhooks"
-3. Ajoutez vos intégrations
-4. Testez avec le bouton "Tester"
+2. Cliquez sur "Notifications"
+3. **Pour emails:** Onglet "Emails" → Ajoutez votre adresse → Testez
+4. **Pour webhooks:** Onglet "Webhooks" → Ajoutez l'URL → Testez
+5. Consultez l'historique dans l'onglet "Historique"
 
 ## 📞 Contact FinancePro
 

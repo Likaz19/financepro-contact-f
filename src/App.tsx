@@ -20,6 +20,10 @@ import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { sendToAllWebhooks, useWebhooks, type WebhookPayload } from "@/lib/webhooks"
 import { WebhookSettings } from "@/components/WebhookSettings"
+import { sendToAllEmailRecipients, useEmailNotifications, type EmailPayload } from "@/lib/email-notifications"
+import { EmailNotificationSettings } from "@/components/EmailNotificationSettings"
+import { EmailNotificationLogs } from "@/components/EmailNotificationLogs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type FormData = {
   name: string
@@ -217,6 +221,7 @@ function App() {
   const [countryCodeOpen, setCountryCodeOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [webhooks] = useWebhooks()
+  const [emailNotifications] = useEmailNotifications()
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -389,6 +394,31 @@ function App() {
         }
       }
 
+      if (emailNotifications && emailNotifications.length > 0) {
+        const emailPayload: EmailPayload = {
+          formData: {
+            name: formData.name,
+            email: formData.email,
+            countryCode: formData.countryCode,
+            phone: formData.phone,
+            interests: formData.interests,
+            services: formData.services,
+            modules: formData.modules,
+            message: formData.message,
+          },
+          submittedAt: new Date().toISOString(),
+          attachmentCount: formData.attachments.length,
+        }
+
+        const emailResults = await sendToAllEmailRecipients(emailNotifications, emailPayload)
+        
+        const successEmails = emailResults.filter(r => r.success)
+        if (successEmails.length > 0) {
+          console.log(`${successEmails.length} notification(s) email ouvertes`)
+          toast.success(`${successEmails.length} notification(s) email préparée(s)`)
+        }
+      }
+
       console.log("Formulaire soumis avec succès:", data)
       
       setSubmissionState("success")
@@ -557,19 +587,36 @@ function App() {
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 -mt-1 relative">
                   <GearSix size={20} weight="bold" />
-                  Webhooks
-                  {webhooks && webhooks.filter(w => w.enabled).length > 0 && (
+                  Notifications
+                  {((webhooks && webhooks.filter(w => w.enabled).length > 0) || 
+                    (emailNotifications && emailNotifications.filter(e => e.enabled).length > 0)) && (
                     <Badge variant="default" className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-xs">
-                      {webhooks.filter(w => w.enabled).length}
+                      {(webhooks?.filter(w => w.enabled).length || 0) + 
+                       (emailNotifications?.filter(e => e.enabled).length || 0)}
                     </Badge>
                   )}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Configuration des webhooks</DialogTitle>
+                  <DialogTitle>Configuration des notifications</DialogTitle>
                 </DialogHeader>
-                <WebhookSettings />
+                <Tabs defaultValue="email" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="email">Emails</TabsTrigger>
+                    <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+                    <TabsTrigger value="logs">Historique</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="email" className="mt-6">
+                    <EmailNotificationSettings />
+                  </TabsContent>
+                  <TabsContent value="webhooks" className="mt-6">
+                    <WebhookSettings />
+                  </TabsContent>
+                  <TabsContent value="logs" className="mt-6">
+                    <EmailNotificationLogs />
+                  </TabsContent>
+                </Tabs>
               </DialogContent>
             </Dialog>
           </div>
