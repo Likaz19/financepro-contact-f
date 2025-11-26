@@ -5,7 +5,7 @@ This form is integrated with Supabase for data persistence and file storage. The
 ## Supabase Configuration
 
 **Project URL**: `https://rzudotbbfoklxcebghan.supabase.co`  
-**Anon Key**: Configured in `src/lib/supabase.ts`
+**Anon Key**: Configured in `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVocmJjb2RnYXZ6eGNsYnh6c2hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwMzA5MTMsImV4cCI6MjA3OTYwNjkxM30.g26zzat6-Tjmq3y6KTKwtb7G2MaEuOjL4T9xkALatkM`
 
 The Supabase client is initialized and ready to use throughout the application.
 
