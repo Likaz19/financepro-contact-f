@@ -1,4 +1,5 @@
 import { useKV } from '@github/spark/hooks'
+import { generateEmailTemplate, generatePlainTextVersion, determineTemplateType } from './email-templates'
 
 export type EmailNotificationConfig = {
   id: string
@@ -6,6 +7,7 @@ export type EmailNotificationConfig = {
   recipientName: string
   enabled: boolean
   createdAt: string
+  useHtmlTemplate?: boolean
 }
 
 export type EmailPayload = {
@@ -29,65 +31,23 @@ export type EmailResult = {
   success: boolean
   error?: string
   timestamp: string
-}
-
-function formatEmailBody(payload: EmailPayload): string {
-  const { formData, submittedAt, attachmentCount } = payload
-  
-  let body = `📋 NOUVEAU FORMULAIRE DE CONTACT - FINANCEPRO\n\n`
-  body += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
-  
-  body += `👤 INFORMATIONS DE CONTACT\n`
-  body += `   Nom: ${formData.name}\n`
-  body += `   Email: ${formData.email}\n`
-  if (formData.phone) {
-    body += `   Téléphone: ${formData.countryCode} ${formData.phone}\n`
-  }
-  body += `\n`
-  
-  body += `💼 INTÉRÊTS\n`
-  body += `   ${formData.interests.join(', ')}\n`
-  body += `\n`
-  
-  if (formData.services.length > 0) {
-    body += `🔧 SERVICES CONSULTING SÉLECTIONNÉS\n`
-    formData.services.forEach(service => {
-      body += `   • ${service}\n`
-    })
-    body += `\n`
-  }
-  
-  if (formData.modules.length > 0) {
-    body += `📚 MODULES FORMATION SÉLECTIONNÉS\n`
-    formData.modules.forEach(module => {
-      body += `   • ${module}\n`
-    })
-    body += `\n`
-  }
-  
-  if (formData.message) {
-    body += `💬 MESSAGE\n`
-    body += `   ${formData.message}\n`
-    body += `\n`
-  }
-  
-  if (attachmentCount > 0) {
-    body += `📎 FICHIERS JOINTS: ${attachmentCount}\n`
-    body += `\n`
-  }
-  
-  body += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
-  body += `🕐 Soumis le: ${new Date(submittedAt).toLocaleString('fr-FR', {
-    dateStyle: 'full',
-    timeStyle: 'short'
-  })}\n`
-  
-  return body
+  templateType?: string
 }
 
 function formatEmailSubject(payload: EmailPayload): string {
-  const interests = payload.formData.interests.join(' & ')
-  return `🔔 Nouveau contact FinancePro: ${payload.formData.name} - ${interests}`
+  const templateType = determineTemplateType(payload.formData.interests)
+  const name = payload.formData.name
+  
+  switch (templateType) {
+    case 'consulting':
+      return `💼 Demande Consulting - ${name} | FinancePro`
+    case 'formation':
+      return `📚 Inscription Formation - ${name} | FinancePro`
+    case 'combined':
+      return `⭐ Client Premium - ${name} (Consulting + Formation) | FinancePro`
+    default:
+      return `🔔 Nouveau contact FinancePro: ${name}`
+  }
 }
 
 export async function sendEmailNotification(
@@ -96,16 +56,26 @@ export async function sendEmailNotification(
 ): Promise<EmailResult> {
   try {
     const subject = formatEmailSubject(payload)
-    const body = formatEmailBody(payload)
+    const templateType = determineTemplateType(payload.formData.interests)
     
-    const mailtoLink = `mailto:${config.recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-    
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-    
-    if (isMobile) {
-      window.location.href = mailtoLink
+    if (config.useHtmlTemplate) {
+      const htmlContent = generateEmailTemplate(payload)
+      const blob = new Blob([htmlContent], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+      
+      setTimeout(() => URL.revokeObjectURL(url), 100)
     } else {
-      window.open(mailtoLink, '_blank')
+      const body = generatePlainTextVersion(payload)
+      const mailtoLink = `mailto:${config.recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+      
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      
+      if (isMobile) {
+        window.location.href = mailtoLink
+      } else {
+        window.open(mailtoLink, '_blank')
+      }
     }
     
     return {
@@ -113,6 +83,7 @@ export async function sendEmailNotification(
       recipientEmail: config.recipientEmail,
       success: true,
       timestamp: new Date().toISOString(),
+      templateType,
     }
   } catch (error) {
     return {
