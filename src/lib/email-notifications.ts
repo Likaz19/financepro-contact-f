@@ -16,6 +16,7 @@ export type EmailPayload = {
     email: string
     countryCode: string
     phone: string
+    address: string
     interests: string[]
     services: string[]
     modules: string[]

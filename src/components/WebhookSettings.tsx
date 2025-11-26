@@ -104,6 +104,7 @@ export function WebhookSettings() {
         email: "test@example.com",
         countryCode: "+221",
         phone: "764644290",
+        address: "Dakar, Sénégal",
         interests: ["Consulting", "Formation"],
         services: ["Audit financier"],
         modules: ["Comptabilité fondamentale"],

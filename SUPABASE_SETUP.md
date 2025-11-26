@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS contact_submissions (
   email TEXT NOT NULL,
   country_code TEXT,
   phone TEXT,
+  address TEXT,
   interests TEXT[] NOT NULL,
   services TEXT[] DEFAULT '{}',
   modules TEXT[] DEFAULT '{}',

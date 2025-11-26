@@ -77,6 +77,12 @@ function generateConsultingTemplate(payload: EmailPayload): string {
                     </td>
                   </tr>
                   ` : ''}
+                  ${formData.address ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #555; font-size: 14px; font-weight: 600;">Adresse:</td>
+                    <td style="padding: 8px 0; color: #333; font-size: 14px;">${formData.address}</td>
+                  </tr>
+                  ` : ''}
                 </table>
               </div>
               
@@ -208,6 +214,12 @@ function generateFormationTemplate(payload: EmailPayload): string {
                         ${formData.countryCode} ${formData.phone}
                       </a>
                     </td>
+                  </tr>
+                  ` : ''}
+                  ${formData.address ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #555; font-size: 14px; font-weight: 600;">Adresse:</td>
+                    <td style="padding: 8px 0; color: #333; font-size: 14px;">${formData.address}</td>
                   </tr>
                   ` : ''}
                 </table>
@@ -354,6 +366,12 @@ function generateCombinedTemplate(payload: EmailPayload): string {
                         ${formData.countryCode} ${formData.phone}
                       </a>
                     </td>
+                  </tr>
+                  ` : ''}
+                  ${formData.address ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #555; font-size: 14px; font-weight: 600;">Adresse:</td>
+                    <td style="padding: 8px 0; color: #333; font-size: 14px;">${formData.address}</td>
                   </tr>
                   ` : ''}
                 </table>

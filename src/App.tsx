@@ -31,6 +31,7 @@ type FormData = {
   email: string
   countryCode: string
   phone: string
+  address: string
   interests: string[]
   services: string[]
   modules: string[]
@@ -228,6 +229,7 @@ function App() {
     email: "",
     countryCode: "+221",
     phone: "",
+    address: "",
     interests: [],
     services: [],
     modules: [],
@@ -331,6 +333,7 @@ function App() {
         email: formData.email,
         country_code: formData.countryCode,
         phone: formData.phone,
+        address: formData.address,
         interests: formData.interests,
         services: formData.services,
         modules: formData.modules,
@@ -381,6 +384,7 @@ function App() {
             email: formData.email,
             countryCode: formData.countryCode,
             phone: formData.phone,
+            address: formData.address,
             interests: formData.interests,
             services: formData.services,
             modules: formData.modules,
@@ -413,6 +417,7 @@ function App() {
             email: formData.email,
             countryCode: formData.countryCode,
             phone: formData.phone,
+            address: formData.address,
             interests: formData.interests,
             services: formData.services,
             modules: formData.modules,
@@ -762,6 +767,20 @@ function App() {
                         Numéro complet: {formData.countryCode} {formData.phone}
                       </p>
                     )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="address" className="text-base font-semibold">
+                      Adresse
+                    </Label>
+                    <Input
+                      id="address"
+                      type="text"
+                      value={formData.address}
+                      onChange={(e) => updateField("address", e.target.value)}
+                      placeholder="Ville, Pays"
+                      className="mt-2"
+                    />
                   </div>
 
                   <Button
@@ -1154,6 +1173,7 @@ function App() {
                         <p><span className="font-medium">Nom:</span> {formData.name}</p>
                         <p><span className="font-medium">Email:</span> {formData.email}</p>
                         {formData.phone && <p><span className="font-medium">Téléphone:</span> {formData.countryCode} {formData.phone}</p>}
+                        {formData.address && <p><span className="font-medium">Adresse:</span> {formData.address}</p>}
                       </div>
                     </div>
 
