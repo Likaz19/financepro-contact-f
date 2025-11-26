@@ -24,6 +24,7 @@ import { sendToAllEmailRecipients, useEmailNotifications, type EmailPayload } fr
 import { EmailNotificationSettings } from "@/components/EmailNotificationSettings"
 import { EmailNotificationLogs } from "@/components/EmailNotificationLogs"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DatabaseSetupAlert } from "@/components/DatabaseSetupAlert"
 
 type FormData = {
   name: string
@@ -54,7 +55,7 @@ type CountryCode = {
   format: string
 }
 
-type SubmissionState = "idle" | "submitting" | "success" | "error"
+type SubmissionState = "idle" | "submitting" | "success" | "error" | "database-error"
 
 const COUNTRY_CODES: CountryCode[] = [
   { code: "+221", name: "Sénégal", flag: "🇸🇳", pattern: /^[0-9]{9}$/, format: "XX XXX XX XX" },
@@ -342,6 +343,17 @@ function App() {
         .select()
 
       if (error) {
+        if (error.message.includes('relation "public.contact_submissions" does not exist') || 
+            error.message.includes('Could not find the table')) {
+          setSubmissionState("database-error")
+          const errorMsg = '⚠️ Base de données non configurée. Voir les instructions ci-dessous.'
+          setApiError(errorMsg)
+          toast.error('Base de données non configurée', { 
+            description: 'Suivez les instructions dans l\'alerte rouge ci-dessous pour configurer en 3 minutes.',
+            duration: 8000 
+          })
+          return
+        }
         throw new Error(error.message)
       }
 
@@ -622,6 +634,10 @@ function App() {
           </div>
 
           <Progress value={progress} className="mb-8 h-2.5" />
+
+          {submissionState === "database-error" && (
+            <DatabaseSetupAlert />
+          )}
 
           <form onSubmit={handleSubmit}>
             <AnimatePresence mode="wait">

@@ -2,6 +2,36 @@
 
 Un formulaire de contact professionnel pour FinancePro avec intégration Supabase et webhooks pour l'automatisation.
 
+---
+
+## 🚨 ERREUR: "Could not find the table"? 
+
+## 👉 **[CLIQUEZ ICI - START_HERE.md](./START_HERE.md)** 👈
+
+**Setup en 3 minutes** - Instructions complètes et simples
+
+---
+
+## ⚠️ CONFIGURATION REQUISE - IMPORTANT!
+
+**Avant d'utiliser ce formulaire, vous DEVEZ configurer la base de données Supabase.**
+
+### 📋 Étapes Rapides:
+
+1. **Ouvrez** [votre dashboard Supabase](https://rzudotbbfoklxcebghan.supabase.co)
+2. **Allez à** SQL Editor → New Query
+3. **Copiez/Collez** le code du fichier `supabase-setup.sql`
+4. **Cliquez sur** Run
+
+**📖 Instructions détaillées:** 
+- **Simple:** [START_HERE.md](./START_HERE.md) ⭐ **COMMENCEZ ICI**
+- **Détaillées:** [DATABASE_SETUP_INSTRUCTIONS.md](./DATABASE_SETUP_INSTRUCTIONS.md)
+- **Checklist:** [SETUP_STATUS.md](./SETUP_STATUS.md)
+
+**⏱️ Temps estimé:** 2-3 minutes
+
+---
+
 ## 🌟 Fonctionnalités
 
 - ✅ Formulaire multi-étapes avec validation
