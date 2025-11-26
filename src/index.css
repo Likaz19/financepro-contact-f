@@ -95,3 +95,50 @@
   animation: pop 0.4s ease-out 0.3s forwards;
   opacity: 0;
 }
+
+.pac-container {
+  font-family: 'Inter', sans-serif;
+  border-radius: 0.5rem;
+  border: 1px solid oklch(0.90 0.01 264);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
+  margin-top: 4px;
+  z-index: 9999;
+}
+
+.pac-item {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid oklch(0.95 0.01 264);
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: oklch(0.25 0.15 264);
+}
+
+.pac-item:first-child {
+  border-top: none;
+}
+
+.pac-item:hover {
+  background-color: oklch(0.97 0 0);
+}
+
+.pac-item-selected {
+  background-color: oklch(0.95 0.01 264);
+}
+
+.pac-matched {
+  font-weight: 600;
+  color: oklch(0.42 0.15 264);
+}
+
+.pac-icon {
+  margin-top: 0.25rem;
+}
+
+.pac-item-query {
+  font-size: 0.95rem;
+  color: oklch(0.25 0.15 264);
+}
+
+.pac-logo {
+  padding: 0.5rem 1rem;
+}

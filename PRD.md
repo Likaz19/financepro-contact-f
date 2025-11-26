@@ -20,11 +20,11 @@ A professional multi-step contact form for FinancePro, a financial consulting an
 - **Success criteria**: Users can navigate forward/backward without losing data, progress bar accurately reflects position
 
 ### Contact Information Collection (Step 1)
-- **Functionality**: Collects name, email, and phone number with validation
+- **Functionality**: Collects name, email, phone number with international country code selector, and address with optional Google Places autocomplete
 - **Purpose**: Gather essential contact details before service-specific questions
 - **Trigger**: User loads the form
-- **Progression**: User fills fields → Clicks "Suivant" → Validation check → Advance to step 2 or show errors
-- **Success criteria**: All required fields validated before advancing, data persists when navigating back
+- **Progression**: User fills fields → Optional autocomplete suggestions for address → Clicks "Suivant" → Validation check → Advance to step 2 or show errors
+- **Success criteria**: All required fields validated before advancing, data persists when navigating back, Google Places autocomplete works if configured
 
 ### Interest Selection (Step 2)
 - **Functionality**: Checkbox selection for Consulting and/or Formation (Training)
@@ -78,9 +78,16 @@ A professional multi-step contact form for FinancePro, a financial consulting an
 ### Webhook Integration
 - **Functionality**: Configure and manage external webhooks to receive form submissions, view delivery logs and status
 - **Purpose**: Enable integration with third-party services (Zapier, Make.com, custom APIs) for automated workflows
-- **Trigger**: Click "Webhooks" button in form header
+- **Trigger**: Click "Paramètres" button in form header, navigate to Webhooks tab
 - **Progression**: Open settings dialog → Add/edit/delete webhooks → Configure URL and headers → Enable/disable webhooks → View delivery logs → Close dialog
 - **Success criteria**: Webhooks can be added with name and URL, custom headers support JSON format, webhooks can be toggled on/off, webhooks receive POST with form data on submission, delivery logs show success/failure with timestamps and error messages, failed webhooks don't block form submission, copy example payload feature works
+
+### Google Places Address Autocomplete (Optional)
+- **Functionality**: Optional Google Places API integration for address field autocomplete with real-time suggestions
+- **Purpose**: Improve address entry accuracy and user experience with validated, standardized addresses
+- **Trigger**: User configures Google Places API key in settings, then types in address field
+- **Progression**: Admin adds API key in settings → Address field shows autocomplete icon → User types → Suggestions appear → User selects → Address fills automatically
+- **Success criteria**: API key can be configured and stored securely, address field shows autocomplete indicator when active, suggestions appear as user types (minimum 3 characters), selected address fills field correctly, works without API key configured (manual entry), comprehensive setup guide available
 
 ## Edge Case Handling
 - **No Interest Selected**: Validation prevents progression from step 2 until at least one interest is selected
@@ -100,6 +107,10 @@ A professional multi-step contact form for FinancePro, a financial consulting an
 - **Webhook Timeout**: 10 second timeout per webhook prevents hanging
 - **No Webhooks Configured**: Form works normally without any webhooks, integration is optional
 - **Multiple Webhooks**: All enabled webhooks fire in parallel, individual failures don't affect others
+- **No Google API Key**: Address field works as manual text input without autocomplete
+- **Google API Load Failure**: Falls back to manual entry with user notification
+- **Invalid API Key**: Error shown in settings, autocomplete disabled
+- **Address Manual Override**: Users can type manually even with autocomplete enabled
 
 ## Validation Rules
 Client-side validation enforces data quality before API submission:
@@ -133,7 +144,7 @@ The form is integrated with Supabase for real-time data persistence and file sto
 
 ### Webhook Integration
 - **Configuration**: Stored in browser using `useKV` hook with key 'webhooks'
-- **Management UI**: Accessible via "Webhooks" button in form header
+- **Management UI**: Accessible via "Paramètres" button in form header, Webhooks tab
 - **Webhook Structure**: Each webhook has id, name, url, enabled status, optional custom headers, and creation timestamp
 - **Payload Format**: JSON POST with formData object, submittedAt timestamp, and attachmentCount
 - **Delivery**: All enabled webhooks fire in parallel after successful Supabase submission
@@ -142,8 +153,19 @@ The form is integrated with Supabase for real-time data persistence and file sto
 - **Logs**: Last 100 webhook delivery attempts stored with status, timestamp, and error details
 - **Headers**: Support for custom HTTP headers (e.g., Authorization tokens) in JSON format
 
+### Google Places API (Optional)
+- **Configuration**: API key stored in browser using `useKV` hook with key 'google-places-api-key'
+- **Management UI**: Accessible via "Paramètres" button, Adresses tab
+- **Loading**: Script loaded dynamically when API key is configured
+- **Language**: French language settings for appropriate localization
+- **Fields**: Requests formatted_address, address_components, and geometry from Places API
+- **Autocomplete Type**: Restricted to 'address' type for relevant suggestions
+- **Fallback**: Works as standard text input if API key not configured or load fails
+- **Security**: Client-side key storage, should be restricted by domain in Google Cloud Console
+
 See `API_SETUP.md` for detailed database schema and storage bucket configuration instructions.
 See `WEBHOOK_GUIDE.md` for webhook integration examples and troubleshooting.
+See `GOOGLE_PLACES_SETUP.md` for Google Places API configuration and setup guide.
 
 ## Design Direction
 The design should feel corporate and trustworthy with a clean, professional aesthetic that reflects financial expertise. Clear blue tones communicate reliability and competence, while gold accents add a touch of premium quality. The interface should be minimal and focused, avoiding distractions from the form completion goal.
@@ -210,13 +232,16 @@ Animations should feel professional and purposeful - smooth transitions between 
   - Trash (Phosphor) for file removal and webhook deletion buttons
   - Phone (Phosphor) for phone contact link in footer
   - Envelope (Phosphor) for email contact link in footer
-  - MapPin (Phosphor) for location display in footer
+  - MapPin (Phosphor) for location display in footer and address autocomplete indicator
   - WhatsappLogo (Phosphor) for WhatsApp link in footer
   - FacebookLogo, LinkedinLogo, InstagramLogo (Phosphor) for social media links in footer
-  - GearSix (Phosphor) for webhook settings button
+  - GearSix (Phosphor) for settings button
   - WebhooksLogo (Phosphor) for webhook configuration interface
   - Copy (Phosphor) for copy example payload button
   - Clock (Phosphor) for webhook logs empty state
+  - Key (Phosphor) for API key configuration
+  - CaretUpDown (Phosphor) for country code dropdown
+  - Check (Phosphor) for selected items in dropdowns
   
 - **Spacing**: Consistent use of Tailwind spacing scale - gap-6 between form sections, gap-4 for checkbox groups, px-8 py-6 for card padding, gap-8 for footer grid columns, gap-3 for file list items
 

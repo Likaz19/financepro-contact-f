@@ -37,6 +37,7 @@ Un formulaire de contact professionnel pour FinancePro avec intégration Supabas
 - ✅ Formulaire multi-étapes avec validation
 - ✅ Téléchargement de fichiers (jusqu'à 5 fichiers, 10 Mo chacun)
 - ✅ Sélection intelligente du code pays (70+ pays)
+- ✅ **Autocomplétion d'adresse avec Google Places API (optionnel)**
 - ✅ Validation en temps réel des champs
 - ✅ Écran de confirmation avant envoi
 - ✅ Intégration Supabase (base de données + stockage)
@@ -65,6 +66,24 @@ Recevez un email pré-formaté dans votre client email pour chaque soumission.
 **Documentation:**
 - **[EMAIL_QUICK_START.md](./EMAIL_QUICK_START.md)** - Configuration en 2 minutes
 - **[EMAIL_NOTIFICATIONS.md](./EMAIL_NOTIFICATIONS.md)** - Guide complet
+
+### 📍 Google Places API (Optionnel)
+
+Activez l'autocomplétion d'adresse pour faciliter la saisie.
+
+**Configuration Rapide:**
+1. Cliquez sur **"Paramètres"** → onglet **"Adresses"**
+2. Cliquez sur **"Configurer"**
+3. Obtenez une clé API Google Places (guide inclus)
+4. Collez la clé et enregistrez
+5. ✅ L'autocomplétion est active!
+
+**Idéal pour:** Adresses précises, validation automatique, expérience utilisateur améliorée
+
+**Documentation:**
+- **[GOOGLE_PLACES_SETUP.md](./GOOGLE_PLACES_SETUP.md)** - Guide complet (5 minutes)
+
+**Note:** Google offre 200$ de crédit gratuit/mois (~11,000 sessions d'autocomplétion)
 
 ### 🔗 Webhooks
 
@@ -145,10 +164,11 @@ Voir [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) pour les instructions complètes.
 ### Configuration Notifications (Optionnel)
 
 1. Accédez au formulaire
-2. Cliquez sur "Notifications"
+2. Cliquez sur "Paramètres"
 3. **Pour emails:** Onglet "Emails" → Ajoutez votre adresse → Testez
 4. **Pour webhooks:** Onglet "Webhooks" → Ajoutez l'URL → Testez
-5. Consultez l'historique dans l'onglet "Historique"
+5. **Pour adresses:** Onglet "Adresses" → Ajoutez clé API Google Places
+6. Consultez l'historique dans l'onglet "Historique"
 
 ## 📞 Contact FinancePro
 

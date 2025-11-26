@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useState, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, Warning, PencilSimple, UploadSimple, FilePdf, FileDoc, FileImage, File as FileIcon, Trash, CaretUpDown, Check, GearSix } from "@phosphor-icons/react"
+import { CheckCircle, Warning, PencilSimple, UploadSimple, FilePdf, FileDoc, FileImage, File as FileIcon, Trash, CaretUpDown, Check, GearSix, MapPin } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -25,6 +25,9 @@ import { EmailNotificationSettings } from "@/components/EmailNotificationSetting
 import { EmailNotificationLogs } from "@/components/EmailNotificationLogs"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DatabaseSetupAlert } from "@/components/DatabaseSetupAlert"
+import { GooglePlacesApiConfig } from "@/components/GooglePlacesApiConfig"
+import { useKV } from "@github/spark/hooks"
+import { useGooglePlaces, useAutocomplete, type PlaceResult } from "@/hooks/use-google-places"
 
 type FormData = {
   name: string
@@ -224,6 +227,10 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [webhooks] = useWebhooks()
   const [emailNotifications] = useEmailNotifications()
+  const [googleApiKey] = useKV<string | null>("google-places-api-key", null)
+  const addressInputRef = useRef<HTMLInputElement>(null)
+  const { isLoaded: isPlacesLoaded } = useGooglePlaces(googleApiKey ?? null)
+  
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -236,6 +243,16 @@ function App() {
     message: "",
     attachments: [],
   })
+
+  const handlePlaceSelected = useCallback((place: PlaceResult) => {
+    setFormData((prev) => ({
+      ...prev,
+      address: place.formatted_address,
+    }))
+    toast.success("Adresse sélectionnée")
+  }, [])
+
+  useAutocomplete(addressInputRef, handlePlaceSelected, isPlacesLoaded)
 
   const totalSteps = 6
   const progress = ((currentStep + 1) / totalSteps) * 100
@@ -604,24 +621,27 @@ function App() {
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 -mt-1 relative">
                   <GearSix size={20} weight="bold" />
-                  Notifications
+                  Paramètres
                   {((webhooks && webhooks.filter(w => w.enabled).length > 0) || 
-                    (emailNotifications && emailNotifications.filter(e => e.enabled).length > 0)) && (
+                    (emailNotifications && emailNotifications.filter(e => e.enabled).length > 0) ||
+                    googleApiKey) && (
                     <Badge variant="default" className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-xs">
                       {(webhooks?.filter(w => w.enabled).length || 0) + 
-                       (emailNotifications?.filter(e => e.enabled).length || 0)}
+                       (emailNotifications?.filter(e => e.enabled).length || 0) +
+                       (googleApiKey ? 1 : 0)}
                     </Badge>
                   )}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Configuration des notifications</DialogTitle>
+                  <DialogTitle>Configuration</DialogTitle>
                 </DialogHeader>
                 <Tabs defaultValue="email" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="email">Emails</TabsTrigger>
                     <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+                    <TabsTrigger value="places">Adresses</TabsTrigger>
                     <TabsTrigger value="logs">Historique</TabsTrigger>
                   </TabsList>
                   <TabsContent value="email" className="mt-6">
@@ -629,6 +649,30 @@ function App() {
                   </TabsContent>
                   <TabsContent value="webhooks" className="mt-6">
                     <WebhookSettings />
+                  </TabsContent>
+                  <TabsContent value="places" className="mt-6">
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">Google Places API</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Activez l'autocomplétion d'adresse avec Google Places API pour faciliter la saisie des adresses.
+                        </p>
+                      </div>
+                      <GooglePlacesApiConfig />
+                      <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+                        <h4 className="text-sm font-semibold mb-2">Comment obtenir une clé API ?</h4>
+                        <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                          <li>Accédez à <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Google Cloud Console</a></li>
+                          <li>Créez un nouveau projet ou sélectionnez un projet existant</li>
+                          <li>Activez l'API "Places API" dans la bibliothèque d'API</li>
+                          <li>Créez des identifiants (Clé API) dans "Identifiants"</li>
+                          <li>Copiez la clé et collez-la ci-dessus</li>
+                        </ol>
+                        <p className="text-xs text-muted-foreground mt-3">
+                          Note: Google Places API nécessite une facturation activée, mais offre 200$ de crédit gratuit par mois.
+                        </p>
+                      </div>
+                    </div>
                   </TabsContent>
                   <TabsContent value="logs" className="mt-6">
                     <EmailNotificationLogs />
@@ -770,17 +814,38 @@ function App() {
                   </div>
 
                   <div>
-                    <Label htmlFor="address" className="text-base font-semibold">
+                    <Label htmlFor="address" className="text-base font-semibold flex items-center gap-2">
                       Adresse
+                      {isPlacesLoaded && (
+                        <Badge variant="secondary" className="text-xs gap-1">
+                          <MapPin size={12} weight="fill" />
+                          Auto
+                        </Badge>
+                      )}
                     </Label>
-                    <Input
-                      id="address"
-                      type="text"
-                      value={formData.address}
-                      onChange={(e) => updateField("address", e.target.value)}
-                      placeholder="Ville, Pays"
-                      className="mt-2"
-                    />
+                    <div className="relative">
+                      <Input
+                        ref={addressInputRef}
+                        id="address"
+                        type="text"
+                        value={formData.address}
+                        onChange={(e) => updateField("address", e.target.value)}
+                        placeholder={isPlacesLoaded ? "Commencez à taper une adresse..." : "Ville, Pays"}
+                        className="mt-2"
+                      />
+                      {isPlacesLoaded && (
+                        <MapPin 
+                          size={20} 
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none mt-1" 
+                          weight="duotone"
+                        />
+                      )}
+                    </div>
+                    {isPlacesLoaded && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Sélectionnez une suggestion ou tapez manuellement
+                      </p>
+                    )}
                   </div>
 
                   <Button
