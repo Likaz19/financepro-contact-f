@@ -26,6 +26,7 @@ import { EmailNotificationLogs } from "@/components/EmailNotificationLogs"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DatabaseSetupAlert } from "@/components/DatabaseSetupAlert"
 import { GooglePlacesApiConfig } from "@/components/GooglePlacesApiConfig"
+import { ClientsViewer } from "@/components/ClientsViewer"
 import { useKV } from "@github/spark/hooks"
 import { useGooglePlaces, useAutocomplete, type PlaceResult } from "@/hooks/use-google-places"
 
@@ -638,10 +639,11 @@ function App() {
                   <DialogTitle>Configuration</DialogTitle>
                 </DialogHeader>
                 <Tabs defaultValue="email" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="email">Emails</TabsTrigger>
                     <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
                     <TabsTrigger value="places">Adresses</TabsTrigger>
+                    <TabsTrigger value="clients">Clients</TabsTrigger>
                     <TabsTrigger value="logs">Historique</TabsTrigger>
                   </TabsList>
                   <TabsContent value="email" className="mt-6">
@@ -673,6 +675,9 @@ function App() {
                         </p>
                       </div>
                     </div>
+                  </TabsContent>
+                  <TabsContent value="clients" className="mt-6">
+                    <ClientsViewer />
                   </TabsContent>
                   <TabsContent value="logs" className="mt-6">
                     <EmailNotificationLogs />
