@@ -6,7 +6,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Users, ArrowsClockwise, Warning, CheckCircle } from "@phosphor-icons/react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Users, ArrowsClockwise, Warning, CheckCircle, DownloadSimple, FileCsv, FileXls } from "@phosphor-icons/react"
+import { toast } from "sonner"
 
 type Client = {
   id: string
@@ -56,6 +58,142 @@ export function ClientsViewer() {
     }
   }
 
+  const exportToCSV = () => {
+    if (clients.length === 0) {
+      toast.error("Aucune donnée à exporter")
+      return
+    }
+
+    const headers = [
+      "Nom",
+      "Email",
+      "Code Pays",
+      "Téléphone",
+      "Adresse",
+      "Intérêts",
+      "Services",
+      "Modules",
+      "Message",
+      "Date de création"
+    ]
+
+    const csvRows = [
+      headers.join(","),
+      ...clients.map(client => [
+        `"${client.name || ''}"`,
+        `"${client.email || ''}"`,
+        `"${client.country_code || ''}"`,
+        `"${client.phone || ''}"`,
+        `"${(client.address || '').replace(/"/g, '""')}"`,
+        `"${(client.interests || []).join('; ')}"`,
+        `"${(client.services || []).join('; ')}"`,
+        `"${(client.modules || []).join('; ')}"`,
+        `"${(client.message || '').replace(/"/g, '""')}"`,
+        `"${new Date(client.created_at).toLocaleString('fr-FR')}"`
+      ].join(","))
+    ]
+
+    const csvContent = csvRows.join("\n")
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement("a")
+    const url = URL.createObjectURL(blob)
+    
+    link.setAttribute("href", url)
+    link.setAttribute("download", `clients_financepro_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    toast.success(`${clients.length} clients exportés en CSV`)
+  }
+
+  const exportToExcel = () => {
+    if (clients.length === 0) {
+      toast.error("Aucune donnée à exporter")
+      return
+    }
+
+    const headers = [
+      "Nom",
+      "Email", 
+      "Code Pays",
+      "Téléphone",
+      "Adresse",
+      "Intérêts",
+      "Services",
+      "Modules",
+      "Message",
+      "Date de création"
+    ]
+
+    let excelContent = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8">
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Clients</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          table { border-collapse: collapse; width: 100%; }
+          th { background-color: #4472C4; color: white; font-weight: bold; padding: 8px; border: 1px solid #ddd; }
+          td { padding: 8px; border: 1px solid #ddd; }
+          tr:nth-child(even) { background-color: #f2f2f2; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <thead>
+            <tr>
+              ${headers.map(h => `<th>${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${clients.map(client => `
+              <tr>
+                <td>${client.name || ''}</td>
+                <td>${client.email || ''}</td>
+                <td>${client.country_code || ''}</td>
+                <td>${client.phone || ''}</td>
+                <td>${client.address || ''}</td>
+                <td>${(client.interests || []).join('; ')}</td>
+                <td>${(client.services || []).join('; ')}</td>
+                <td>${(client.modules || []).join('; ')}</td>
+                <td>${client.message || ''}</td>
+                <td>${new Date(client.created_at).toLocaleString('fr-FR')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `
+
+    const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' })
+    const link = document.createElement("a")
+    const url = URL.createObjectURL(blob)
+    
+    link.setAttribute("href", url)
+    link.setAttribute("download", `clients_financepro_${new Date().toISOString().split('T')[0]}.xls`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    toast.success(`${clients.length} clients exportés en Excel`)
+  }
+
   useEffect(() => {
     fetchClients()
   }, [])
@@ -67,16 +205,41 @@ export function ClientsViewer() {
           <Users size={24} weight="bold" className="text-primary" />
           <h3 className="text-lg font-semibold">Table Clients</h3>
         </div>
-        <Button
-          onClick={fetchClients}
-          disabled={loading}
-          size="sm"
-          variant="outline"
-          className="gap-2"
-        >
-          <ArrowsClockwise size={16} weight="bold" className={loading ? "animate-spin" : ""} />
-          Actualiser
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                disabled={loading || clients.length === 0}
+                size="sm"
+                variant="default"
+                className="gap-2"
+              >
+                <DownloadSimple size={16} weight="bold" />
+                Exporter
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToCSV} className="gap-2 cursor-pointer">
+                <FileCsv size={18} weight="bold" />
+                Exporter en CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToExcel} className="gap-2 cursor-pointer">
+                <FileXls size={18} weight="bold" />
+                Exporter en Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            onClick={fetchClients}
+            disabled={loading}
+            size="sm"
+            variant="outline"
+            className="gap-2"
+          >
+            <ArrowsClockwise size={16} weight="bold" className={loading ? "animate-spin" : ""} />
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       {lastFetch && (
