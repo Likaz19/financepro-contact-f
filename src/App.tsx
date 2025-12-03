@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DatabaseSetupAlert } from "@/components/DatabaseSetupAlert"
 import { GooglePlacesApiConfig } from "@/components/GooglePlacesApiConfig"
 import { ClientsViewer } from "@/components/ClientsViewer"
+import { FormSubmissionTest } from "@/components/FormSubmissionTest"
 import { useKV } from "@github/spark/hooks"
 import { useGooglePlaces, useAutocomplete, type PlaceResult } from "@/hooks/use-google-places"
 
@@ -818,14 +819,18 @@ function App() {
                 <DialogHeader>
                   <DialogTitle>Configuration</DialogTitle>
                 </DialogHeader>
-                <Tabs defaultValue="email" className="w-full">
-                  <TabsList className="grid w-full grid-cols-5">
+                <Tabs defaultValue="test" className="w-full">
+                  <TabsList className="grid w-full grid-cols-6">
+                    <TabsTrigger value="test">Tests</TabsTrigger>
                     <TabsTrigger value="email">Emails</TabsTrigger>
                     <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
                     <TabsTrigger value="places">Adresses</TabsTrigger>
                     <TabsTrigger value="clients">Clients</TabsTrigger>
                     <TabsTrigger value="logs">Historique</TabsTrigger>
                   </TabsList>
+                  <TabsContent value="test" className="mt-6">
+                    <FormSubmissionTest />
+                  </TabsContent>
                   <TabsContent value="email" className="mt-6">
                     <EmailNotificationSettings />
                   </TabsContent>
