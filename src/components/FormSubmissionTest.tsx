@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, XCircle, Warning, Flask, Database, WebhooksLogo, Envelope } from "@phosphor-icons/react"
-import { supabase } from "@/lib/supabase"
 import { useWebhooks, sendToAllWebhooks, type WebhookPayload } from "@/lib/webhooks"
 import { useEmailNotifications, sendToAllEmailRecipients, type EmailPayload } from "@/lib/email-notifications"
 import { toast } from "sonner"
@@ -54,49 +53,23 @@ export function FormSubmissionTest() {
         "Un ou plusieurs champs ne passent pas la validation")
     }
 
-    updateResult("supabase", "pending", "Test de connexion Supabase...")
+    updateResult("storage", "pending", "Test du stockage KV...")
     await new Promise(resolve => setTimeout(resolve, 500))
     
     try {
-      const { data, error } = await supabase
-        .from('contact_submissions')
-        .select('id')
-        .limit(1)
-
-      if (error) {
-        if (error.message.includes('relation') || error.message.includes('does not exist')) {
-          updateResult("supabase", "error", "Table non configurée", 
-            "La table contact_submissions n'existe pas. Suivez les instructions dans DatabaseSetupAlert.")
-        } else {
-          updateResult("supabase", "error", `Erreur Supabase: ${error.message}`, 
-            error.details || error.hint)
-        }
-      } else {
-        updateResult("supabase", "success", "Connexion Supabase réussie", 
-          `Table accessible. ${data?.length || 0} soumissions trouvées`)
-      }
-    } catch (err) {
-      updateResult("supabase", "error", "Erreur de connexion", 
-        err instanceof Error ? err.message : "Erreur inconnue")
-    }
-
-    updateResult("storage", "pending", "Test du stockage de fichiers...")
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    try {
-      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets()
+      const testKey = `test_${Date.now()}`
+      const testValue = { test: "data", timestamp: Date.now() }
       
-      if (bucketError) {
-        updateResult("storage", "error", `Erreur storage: ${bucketError.message}`)
+      await window.spark.kv.set(testKey, testValue)
+      const retrieved = await window.spark.kv.get(testKey)
+      
+      if (retrieved && JSON.stringify(retrieved) === JSON.stringify(testValue)) {
+        await window.spark.kv.delete(testKey)
+        updateResult("storage", "success", "Stockage KV opérationnel", 
+          "Écriture et lecture des données réussies")
       } else {
-        const attachmentBucket = buckets?.find(b => b.id === 'contact-attachments')
-        if (attachmentBucket) {
-          updateResult("storage", "success", "Bucket de stockage configuré", 
-            `Bucket 'contact-attachments' trouvé et accessible`)
-        } else {
-          updateResult("storage", "warning", "Bucket manquant", 
-            "Le bucket 'contact-attachments' n'existe pas. Les téléchargements de fichiers échoueront.")
-        }
+        updateResult("storage", "error", "Erreur de stockage", 
+          "Les données n'ont pas été correctement enregistrées")
       }
     } catch (err) {
       updateResult("storage", "error", "Erreur storage", 
@@ -141,38 +114,38 @@ export function FormSubmissionTest() {
     await new Promise(resolve => setTimeout(resolve, 500))
     
     try {
-      const testData = {
-        name: "Test Utilisateur",
-        email: "test@example.com",
-        country_code: "+221",
-        phone: "764644290",
-        address: "Dakar, Sénégal",
-        interests: ["Consulting"],
-        services: ["Audit financier"],
-        modules: [],
-        message: "Test de soumission",
+      const testSubmission = {
+        id: `test_${Date.now()}`,
+        formData: {
+          name: "Test Utilisateur",
+          email: "test@example.com",
+          countryCode: "+221",
+          phone: "764644290",
+          address: "Dakar, Sénégal",
+          interests: ["Consulting"],
+          services: ["Audit financier"],
+          modules: [],
+          message: "Test de soumission",
+        },
+        submittedAt: new Date().toISOString(),
+        attachmentCount: 0,
       }
 
-      const { data, error } = await supabase
-        .from('contact_submissions')
-        .insert([testData])
-        .select()
-
-      if (error) {
-        updateResult("integration", "error", "Échec du test d'insertion", 
-          error.message)
-      } else {
-        const insertedId = data?.[0]?.id
+      const existingSubmissions = await window.spark.kv.get<any[]>("form-submissions") || []
+      await window.spark.kv.set("form-submissions", [...existingSubmissions, testSubmission])
+      
+      const updatedSubmissions = await window.spark.kv.get<any[]>("form-submissions") || []
+      const found = updatedSubmissions.find(s => s.id === testSubmission.id)
+      
+      if (found) {
+        const cleanedSubmissions = updatedSubmissions.filter(s => s.id !== testSubmission.id)
+        await window.spark.kv.set("form-submissions", cleanedSubmissions)
         
-        if (insertedId) {
-          await supabase
-            .from('contact_submissions')
-            .delete()
-            .eq('id', insertedId)
-        }
-
         updateResult("integration", "success", "Test d'intégration réussi", 
           "Insertion et suppression test effectuées avec succès")
+      } else {
+        updateResult("integration", "error", "Échec du test d'insertion", 
+          "La soumission test n'a pas été trouvée")
       }
     } catch (err) {
       updateResult("integration", "error", "Erreur d'intégration", 
@@ -282,7 +255,7 @@ export function FormSubmissionTest() {
                   <p className="text-sm text-muted-foreground">{result.details}</p>
                 )}
               </div>
-              {result.name === "supabase" && <Database size={20} className="text-muted-foreground" />}
+              {result.name === "storage" && <Database size={20} className="text-muted-foreground" />}
               {result.name === "webhooks" && <WebhooksLogo size={20} className="text-muted-foreground" />}
               {result.name === "email" && <Envelope size={20} className="text-muted-foreground" />}
             </div>
