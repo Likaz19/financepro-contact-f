@@ -1,65 +1,35 @@
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Users, ArrowsClockwise, Warning, CheckCircle, DownloadSimple, FileCsv, FileXls } from "@phosphor-icons/react"
+import { Users, CheckCircle, DownloadSimple, FileCsv, FileXls } from "@phosphor-icons/react"
 import { toast } from "sonner"
+import { useKV } from "@github/spark/hooks"
 
-type Client = {
+type StoredSubmission = {
   id: string
-  name: string
-  email: string
-  country_code?: string
-  phone?: string
-  address?: string
-  interests?: string[]
-  services?: string[]
-  modules?: string[]
-  message?: string
-  created_at: string
+  formData: {
+    name: string
+    email: string
+    countryCode: string
+    phone: string
+    address: string
+    interests: string[]
+    services: string[]
+    modules: string[]
+    message: string
+  }
+  submittedAt: string
+  attachmentCount: number
 }
 
 export function ClientsViewer() {
-  const [clients, setClients] = useState<Client[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [lastFetch, setLastFetch] = useState<Date | null>(null)
-
-  const fetchClients = async () => {
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const { data, error: fetchError } = await supabase
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      console.log('Clients data:', data)
-      console.log('Clients error:', fetchError)
-
-      if (fetchError) {
-        throw new Error(fetchError.message)
-      }
-
-      setClients(data || [])
-      setLastFetch(new Date())
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue'
-      setError(errorMessage)
-      console.error('Erreur lors de la récupération des clients:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [submissions] = useKV<StoredSubmission[]>("form-submissions", [])
 
   const exportToCSV = () => {
-    if (clients.length === 0) {
+    if (!submissions || submissions.length === 0) {
       toast.error("Aucune donnée à exporter")
       return
     }
@@ -74,22 +44,24 @@ export function ClientsViewer() {
       "Services",
       "Modules",
       "Message",
-      "Date de création"
+      "Pièces jointes",
+      "Date de soumission"
     ]
 
     const csvRows = [
       headers.join(","),
-      ...clients.map(client => [
-        `"${client.name || ''}"`,
-        `"${client.email || ''}"`,
-        `"${client.country_code || ''}"`,
-        `"${client.phone || ''}"`,
-        `"${(client.address || '').replace(/"/g, '""')}"`,
-        `"${(client.interests || []).join('; ')}"`,
-        `"${(client.services || []).join('; ')}"`,
-        `"${(client.modules || []).join('; ')}"`,
-        `"${(client.message || '').replace(/"/g, '""')}"`,
-        `"${new Date(client.created_at).toLocaleString('fr-FR')}"`
+      ...submissions.map(sub => [
+        `"${sub.formData.name || ''}"`,
+        `"${sub.formData.email || ''}"`,
+        `"${sub.formData.countryCode || ''}"`,
+        `"${sub.formData.phone || ''}"`,
+        `"${(sub.formData.address || '').replace(/"/g, '""')}"`,
+        `"${(sub.formData.interests || []).join('; ')}"`,
+        `"${(sub.formData.services || []).join('; ')}"`,
+        `"${(sub.formData.modules || []).join('; ')}"`,
+        `"${(sub.formData.message || '').replace(/"/g, '""')}"`,
+        `"${sub.attachmentCount || 0} fichier(s)"`,
+        `"${new Date(sub.submittedAt).toLocaleString('fr-FR')}"`
       ].join(","))
     ]
 
@@ -99,17 +71,17 @@ export function ClientsViewer() {
     const url = URL.createObjectURL(blob)
     
     link.setAttribute("href", url)
-    link.setAttribute("download", `clients_financepro_${new Date().toISOString().split('T')[0]}.csv`)
+    link.setAttribute("download", `soumissions_financepro_${new Date().toISOString().split('T')[0]}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     
-    toast.success(`${clients.length} clients exportés en CSV`)
+    toast.success(`${submissions.length} soumissions exportées en CSV`)
   }
 
   const exportToExcel = () => {
-    if (clients.length === 0) {
+    if (!submissions || submissions.length === 0) {
       toast.error("Aucune donnée à exporter")
       return
     }
@@ -124,7 +96,8 @@ export function ClientsViewer() {
       "Services",
       "Modules",
       "Message",
-      "Date de création"
+      "Pièces jointes",
+      "Date de soumission"
     ]
 
     let excelContent = `
@@ -136,7 +109,7 @@ export function ClientsViewer() {
           <x:ExcelWorkbook>
             <x:ExcelWorksheets>
               <x:ExcelWorksheet>
-                <x:Name>Clients</x:Name>
+                <x:Name>Soumissions</x:Name>
                 <x:WorksheetOptions>
                   <x:DisplayGridlines/>
                 </x:WorksheetOptions>
@@ -160,18 +133,19 @@ export function ClientsViewer() {
             </tr>
           </thead>
           <tbody>
-            ${clients.map(client => `
+            ${submissions.map(sub => `
               <tr>
-                <td>${client.name || ''}</td>
-                <td>${client.email || ''}</td>
-                <td>${client.country_code || ''}</td>
-                <td>${client.phone || ''}</td>
-                <td>${client.address || ''}</td>
-                <td>${(client.interests || []).join('; ')}</td>
-                <td>${(client.services || []).join('; ')}</td>
-                <td>${(client.modules || []).join('; ')}</td>
-                <td>${client.message || ''}</td>
-                <td>${new Date(client.created_at).toLocaleString('fr-FR')}</td>
+                <td>${sub.formData.name || ''}</td>
+                <td>${sub.formData.email || ''}</td>
+                <td>${sub.formData.countryCode || ''}</td>
+                <td>${sub.formData.phone || ''}</td>
+                <td>${sub.formData.address || ''}</td>
+                <td>${(sub.formData.interests || []).join('; ')}</td>
+                <td>${(sub.formData.services || []).join('; ')}</td>
+                <td>${(sub.formData.modules || []).join('; ')}</td>
+                <td>${sub.formData.message || ''}</td>
+                <td>${sub.attachmentCount || 0} fichier(s)</td>
+                <td>${new Date(sub.submittedAt).toLocaleString('fr-FR')}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -185,31 +159,27 @@ export function ClientsViewer() {
     const url = URL.createObjectURL(blob)
     
     link.setAttribute("href", url)
-    link.setAttribute("download", `clients_financepro_${new Date().toISOString().split('T')[0]}.xls`)
+    link.setAttribute("download", `soumissions_financepro_${new Date().toISOString().split('T')[0]}.xls`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     
-    toast.success(`${clients.length} clients exportés en Excel`)
+    toast.success(`${submissions.length} soumissions exportées en Excel`)
   }
-
-  useEffect(() => {
-    fetchClients()
-  }, [])
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users size={24} weight="bold" className="text-primary" />
-          <h3 className="text-lg font-semibold">Table Clients</h3>
+          <h3 className="text-lg font-semibold">Soumissions du formulaire</h3>
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                disabled={loading || clients.length === 0}
+                disabled={!submissions || submissions.length === 0}
                 size="sm"
                 variant="default"
                 className="gap-2"
@@ -229,85 +199,19 @@ export function ClientsViewer() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            onClick={fetchClients}
-            disabled={loading}
-            size="sm"
-            variant="outline"
-            className="gap-2"
-          >
-            <ArrowsClockwise size={16} weight="bold" className={loading ? "animate-spin" : ""} />
-            Actualiser
-          </Button>
         </div>
       </div>
 
-      {lastFetch && (
-        <p className="text-xs text-muted-foreground">
-          Dernière actualisation: {lastFetch.toLocaleTimeString('fr-FR')}
-        </p>
-      )}
-
-      {error && (
-        <Alert variant="destructive">
-          <Warning size={16} weight="bold" />
-          <AlertDescription>
-            <strong>Erreur:</strong> {error}
-            {error.includes('does not exist') && (
-              <div className="mt-2">
-                <p className="text-sm">La table 'clients' n'existe pas dans votre base de données.</p>
-                <p className="text-sm mt-1">Créez-la avec cette commande SQL dans Supabase:</p>
-                <code className="block mt-2 p-2 bg-black/10 rounded text-xs">
-                  CREATE TABLE clients (
-                    <br />
-                    &nbsp;&nbsp;id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-                    <br />
-                    &nbsp;&nbsp;name TEXT NOT NULL,
-                    <br />
-                    &nbsp;&nbsp;email TEXT NOT NULL,
-                    <br />
-                    &nbsp;&nbsp;country_code TEXT,
-                    <br />
-                    &nbsp;&nbsp;phone TEXT,
-                    <br />
-                    &nbsp;&nbsp;address TEXT,
-                    <br />
-                    &nbsp;&nbsp;interests TEXT[],
-                    <br />
-                    &nbsp;&nbsp;services TEXT[],
-                    <br />
-                    &nbsp;&nbsp;modules TEXT[],
-                    <br />
-                    &nbsp;&nbsp;message TEXT,
-                    <br />
-                    &nbsp;&nbsp;created_at TIMESTAMPTZ DEFAULT NOW()
-                    <br />
-                  );
-                </code>
-              </div>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!error && !loading && clients.length === 0 && (
+      {(!submissions || submissions.length === 0) && (
         <Alert>
           <CheckCircle size={16} weight="bold" />
           <AlertDescription>
-            La connexion à la table 'clients' fonctionne, mais aucune donnée n'a été trouvée.
+            Aucune soumission enregistrée pour le moment. Les données sont stockées localement dans votre navigateur.
           </AlertDescription>
         </Alert>
       )}
 
-      {loading && (
-        <div className="space-y-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      )}
-
-      {!loading && !error && clients.length > 0 && (
+      {submissions && submissions.length > 0 && (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
@@ -322,19 +226,19 @@ export function ClientsViewer() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clients.map((client) => (
-                  <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.name}</TableCell>
-                    <TableCell>{client.email}</TableCell>
+                {submissions.map((sub) => (
+                  <TableRow key={sub.id}>
+                    <TableCell className="font-medium">{sub.formData.name}</TableCell>
+                    <TableCell>{sub.formData.email}</TableCell>
                     <TableCell>
-                      {client.phone ? `${client.country_code || ''} ${client.phone}` : '-'}
+                      {sub.formData.phone ? `${sub.formData.countryCode || ''} ${sub.formData.phone}` : '-'}
                     </TableCell>
                     <TableCell className="max-w-[200px] truncate">
-                      {client.address || '-'}
+                      {sub.formData.address || '-'}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {client.interests?.map((interest) => (
+                        {sub.formData.interests?.map((interest) => (
                           <Badge key={interest} variant="secondary" className="text-xs">
                             {interest}
                           </Badge>
@@ -342,7 +246,7 @@ export function ClientsViewer() {
                       </div>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {new Date(client.created_at).toLocaleDateString('fr-FR')}
+                      {new Date(sub.submittedAt).toLocaleDateString('fr-FR')}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -351,20 +255,18 @@ export function ClientsViewer() {
           </div>
           <div className="p-4 border-t bg-muted/30">
             <p className="text-sm text-muted-foreground">
-              {clients.length} client{clients.length > 1 ? 's' : ''} trouvé{clients.length > 1 ? 's' : ''}
+              {submissions.length} soumission{submissions.length > 1 ? 's' : ''} trouvée{submissions.length > 1 ? 's' : ''}
             </p>
           </div>
         </Card>
       )}
 
       <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-        <h4 className="text-sm font-semibold mb-2">Console Output</h4>
+        <h4 className="text-sm font-semibold mb-2">💾 Stockage local</h4>
         <p className="text-xs text-muted-foreground">
-          Ouvrez la console du navigateur (F12) pour voir les données complètes retournées par Supabase.
+          Les soumissions sont enregistrées localement dans votre navigateur à l'aide du système de persistance Spark KV.
+          Les données persistent entre les sessions et peuvent être exportées en CSV ou Excel.
         </p>
-        <code className="block mt-2 p-2 bg-black/10 rounded text-xs">
-          const &#123; data, error &#125; = await supabase.from('clients').select('*')
-        </code>
       </div>
     </div>
   )

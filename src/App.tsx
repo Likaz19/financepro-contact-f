@@ -17,14 +17,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { supabase } from "@/lib/supabase"
 import { sendToAllWebhooks, useWebhooks, type WebhookPayload } from "@/lib/webhooks"
 import { WebhookSettings } from "@/components/WebhookSettings"
 import { sendToAllEmailRecipients, useEmailNotifications, type EmailPayload } from "@/lib/email-notifications"
 import { EmailNotificationSettings } from "@/components/EmailNotificationSettings"
 import { EmailNotificationLogs } from "@/components/EmailNotificationLogs"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DatabaseSetupAlert } from "@/components/DatabaseSetupAlert"
 import { GooglePlacesApiConfig } from "@/components/GooglePlacesApiConfig"
 import { ClientsViewer } from "@/components/ClientsViewer"
 import { FormSubmissionTest } from "@/components/FormSubmissionTest"
@@ -61,7 +59,24 @@ type CountryCode = {
   format: string
 }
 
-type SubmissionState = "idle" | "submitting" | "success" | "error" | "database-error"
+type SubmissionState = "idle" | "submitting" | "success" | "error"
+
+type StoredSubmission = {
+  id: string
+  formData: {
+    name: string
+    email: string
+    countryCode: string
+    phone: string
+    address: string
+    interests: string[]
+    services: string[]
+    modules: string[]
+    message: string
+  }
+  submittedAt: string
+  attachmentCount: number
+}
 
 const COUNTRY_CODES: CountryCode[] = [
   { code: "+221", name: "Sénégal", flag: "🇸🇳", pattern: /^[0-9]{9}$/, format: "XX XXX XX XX" },
@@ -230,6 +245,7 @@ function App() {
   const [webhooks] = useWebhooks()
   const [emailNotifications] = useEmailNotifications()
   const [googleApiKey] = useKV<string | null>("google-places-api-key", null)
+  const [submissions, setSubmissions] = useKV<StoredSubmission[]>("form-submissions", [])
   const addressInputRef = useRef<HTMLInputElement>(null)
   const { isLoaded: isPlacesLoaded } = useGooglePlaces(googleApiKey ?? null)
   
@@ -527,54 +543,26 @@ function App() {
     setApiError("")
 
     try {
-      const contactData = {
-        name: formData.name,
-        email: formData.email,
-        country_code: formData.countryCode,
-        phone: formData.phone,
-        address: formData.address,
-        interests: formData.interests,
-        services: formData.services,
-        modules: formData.modules,
-        message: formData.message,
+      const submissionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      
+      const submission: StoredSubmission = {
+        id: submissionId,
+        formData: {
+          name: formData.name,
+          email: formData.email,
+          countryCode: formData.countryCode,
+          phone: formData.phone,
+          address: formData.address,
+          interests: formData.interests,
+          services: formData.services,
+          modules: formData.modules,
+          message: formData.message,
+        },
+        submittedAt: new Date().toISOString(),
+        attachmentCount: formData.attachments.length,
       }
 
-      const { data, error } = await supabase
-        .from('contact_submissions')
-        .insert([contactData])
-        .select()
-
-      if (error) {
-        if (error.message.includes('relation "public.contact_submissions" does not exist') || 
-            error.message.includes('Could not find the table')) {
-          setSubmissionState("database-error")
-          const errorMsg = '⚠️ Base de données non configurée. Voir les instructions ci-dessous.'
-          setApiError(errorMsg)
-          toast.error('Base de données non configurée', { 
-            description: 'Suivez les instructions dans l\'alerte rouge ci-dessous pour configurer en 3 minutes.',
-            duration: 8000 
-          })
-          return
-        }
-        throw new Error(error.message)
-      }
-
-      if (formData.attachments.length > 0 && data && data[0]) {
-        const submissionId = data[0].id
-        
-        for (let i = 0; i < formData.attachments.length; i++) {
-          const file = formData.attachments[i]
-          const fileName = `${submissionId}/${Date.now()}_${file.name}`
-          
-          const { error: uploadError } = await supabase.storage
-            .from('contact-attachments')
-            .upload(fileName, file)
-
-          if (uploadError) {
-            console.error("Erreur lors du téléchargement du fichier:", uploadError)
-          }
-        }
-      }
+      setSubmissions((currentSubmissions) => [...(currentSubmissions || []), submission])
 
       if (webhooks && webhooks.length > 0) {
         const webhookPayload: WebhookPayload = {
@@ -589,7 +577,7 @@ function App() {
             modules: formData.modules,
             message: formData.message,
           },
-          submittedAt: new Date().toISOString(),
+          submittedAt: submission.submittedAt,
           attachmentCount: formData.attachments.length,
         }
 
@@ -628,7 +616,7 @@ function App() {
             modules: formData.modules,
             message: formData.message,
           },
-          submittedAt: new Date().toISOString(),
+          submittedAt: submission.submittedAt,
           attachmentCount: formData.attachments.length,
         }
 
@@ -641,7 +629,7 @@ function App() {
         }
       }
 
-      console.log("Formulaire soumis avec succès:", data)
+      console.log("Formulaire soumis avec succès:", submission)
       
       setSubmissionState("success")
       toast.success("Message envoyé avec succès!")
@@ -831,7 +819,7 @@ function App() {
                     <TabsTrigger value="email">Emails</TabsTrigger>
                     <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
                     <TabsTrigger value="places">Adresses</TabsTrigger>
-                    <TabsTrigger value="clients">Clients</TabsTrigger>
+                    <TabsTrigger value="submissions">Soumissions</TabsTrigger>
                     <TabsTrigger value="logs">Historique</TabsTrigger>
                   </TabsList>
                   <TabsContent value="test" className="mt-6">
@@ -867,7 +855,7 @@ function App() {
                       </div>
                     </div>
                   </TabsContent>
-                  <TabsContent value="clients" className="mt-6">
+                  <TabsContent value="submissions" className="mt-6">
                     <ClientsViewer />
                   </TabsContent>
                   <TabsContent value="logs" className="mt-6">
@@ -879,10 +867,6 @@ function App() {
           </div>
 
           <Progress value={progress} className="mb-8 h-2.5" />
-
-          {submissionState === "database-error" && (
-            <DatabaseSetupAlert />
-          )}
 
           <form onSubmit={handleSubmit}>
             <AnimatePresence mode="wait">
