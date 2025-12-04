@@ -38,7 +38,17 @@ export async function sendToWebhook(
   webhook: WebhookConfig,
   payload: WebhookPayload
 ): Promise<WebhookResult> {
-  const startTime = Date.now()
+  const isLocalhost = webhook.url.includes('localhost') || webhook.url.includes('127.0.0.1')
+  
+  if (isLocalhost) {
+    return {
+      webhookId: webhook.id,
+      webhookName: webhook.name,
+      success: false,
+      error: 'URL localhost détectée - Désactivez ce webhook ou utilisez une URL publique (Zapier, Make.com, webhook.site, etc.)',
+      timestamp: new Date().toISOString(),
+    }
+  }
   
   try {
     const headers: Record<string, string> = {
@@ -68,7 +78,7 @@ export async function sendToWebhook(
       errorMessage = error.message
       
       if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-        errorMessage = 'Connection refused - webhook URL not reachable'
+        errorMessage = 'URL non accessible - Vérifiez que le serveur webhook est en ligne et accessible publiquement'
       }
     }
     

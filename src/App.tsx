@@ -565,41 +565,51 @@ function App() {
       setSubmissions((currentSubmissions) => [...(currentSubmissions || []), submission])
 
       if (webhooks && webhooks.length > 0) {
-        const webhookPayload: WebhookPayload = {
-          formData: {
-            name: formData.name,
-            email: formData.email,
-            countryCode: formData.countryCode,
-            phone: formData.phone,
-            address: formData.address,
-            interests: formData.interests,
-            services: formData.services,
-            modules: formData.modules,
-            message: formData.message,
-          },
-          submittedAt: submission.submittedAt,
-          attachmentCount: formData.attachments.length,
-        }
+        const enabledWebhooks = webhooks.filter(w => w.enabled)
+        
+        if (enabledWebhooks.length > 0) {
+          const webhookPayload: WebhookPayload = {
+            formData: {
+              name: formData.name,
+              email: formData.email,
+              countryCode: formData.countryCode,
+              phone: formData.phone,
+              address: formData.address,
+              interests: formData.interests,
+              services: formData.services,
+              modules: formData.modules,
+              message: formData.message,
+            },
+            submittedAt: submission.submittedAt,
+            attachmentCount: formData.attachments.length,
+          }
 
-        const webhookResults = await sendToAllWebhooks(webhooks, webhookPayload)
-        
-        const failedWebhooks = webhookResults.filter(r => !r.success)
-        if (failedWebhooks.length > 0) {
-          console.warn("Certains webhooks ont échoué:", failedWebhooks)
-          failedWebhooks.forEach(result => {
-            const errorMsg = result.error?.includes('Connection refused') || result.error?.includes('Failed to fetch')
-              ? 'URL non accessible (vérifiez que le serveur est en ligne)'
-              : result.error || 'Erreur inconnue'
-            toast.warning(`Webhook "${result.webhookName}" non livré`, {
-              description: errorMsg,
-              duration: 5000
+          const webhookResults = await sendToAllWebhooks(webhooks, webhookPayload)
+          
+          const failedWebhooks = webhookResults.filter(r => !r.success)
+          if (failedWebhooks.length > 0) {
+            console.warn("Certains webhooks ont échoué:", failedWebhooks)
+            failedWebhooks.forEach(result => {
+              if (result.error?.includes('localhost')) {
+                toast.warning(`Webhook "${result.webhookName}" ignoré`, {
+                  description: 'URL localhost - Utilisez une URL publique ou désactivez ce webhook',
+                  duration: 6000
+                })
+              } else {
+                const errorMsg = result.error || 'Erreur inconnue'
+                toast.warning(`Webhook "${result.webhookName}" non livré`, {
+                  description: errorMsg,
+                  duration: 5000
+                })
+              }
             })
-          })
-        }
-        
-        const successWebhooks = webhookResults.filter(r => r.success)
-        if (successWebhooks.length > 0) {
-          console.log(`${successWebhooks.length} webhook(s) envoyé(s) avec succès`)
+          }
+          
+          const successWebhooks = webhookResults.filter(r => r.success)
+          if (successWebhooks.length > 0) {
+            console.log(`${successWebhooks.length} webhook(s) envoyé(s) avec succès`)
+            toast.success(`${successWebhooks.length} webhook(s) livré(s)`)
+          }
         }
       }
 

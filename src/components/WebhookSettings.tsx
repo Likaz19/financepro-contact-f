@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Plus, Trash, PencilSimple, Copy, WebhooksLogo, PaperPlaneTilt } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { useWebhooks, type WebhookConfig, sendToWebhook, type WebhookPayload } from "@/lib/webhooks"
 import { Badge } from "@/components/ui/badge"
 import { WebhookLogs } from "@/components/WebhookLogs"
+import { LocalhostWebhookWarning } from "@/components/LocalhostWebhookWarning"
 
 export function WebhookSettings() {
   const [webhooks, setWebhooks, deleteWebhooks] = useWebhooks()
@@ -23,6 +24,23 @@ export function WebhookSettings() {
     url: "",
     headers: "",
   })
+
+  const localhostWebhooks = useMemo(() => {
+    return (webhooks || []).filter(w => 
+      w.enabled && (w.url.includes('localhost') || w.url.includes('127.0.0.1'))
+    )
+  }, [webhooks])
+
+  const handleDisableAllLocalhost = () => {
+    setWebhooks((current) =>
+      (current || []).map(w => 
+        (w.url.includes('localhost') || w.url.includes('127.0.0.1'))
+          ? { ...w, enabled: false }
+          : w
+      )
+    )
+    toast.success(`${localhostWebhooks.length} webhook(s) localhost désactivé(s)`)
+  }
 
   const handleAddWebhook = () => {
     if (!newWebhook.name.trim() || !newWebhook.url.trim()) {
@@ -164,12 +182,22 @@ export function WebhookSettings() {
       </TabsList>
       
       <TabsContent value="webhooks" className="space-y-6">
+        {localhostWebhooks.length > 0 && (
+          <LocalhostWebhookWarning 
+            webhookCount={localhostWebhooks.length}
+            onDisableAll={handleDisableAllLocalhost}
+          />
+        )}
+
         <Alert>
           <WebhooksLogo className="h-4 w-4" />
           <AlertDescription>
             <p className="font-semibold mb-2">Connectez vos outils favoris</p>
             <p className="text-sm mb-2">
               Les webhooks permettent d'envoyer automatiquement les soumissions du formulaire vers Zapier, Make.com, Slack, ou votre propre API.
+            </p>
+            <p className="text-sm font-semibold text-destructive mb-2">
+              ⚠️ N'utilisez PAS d'URL localhost (127.0.0.1) - elles ne fonctionneront pas dans cette application web.
             </p>
             <div className="flex gap-2 mt-3">
               <Button
@@ -187,7 +215,7 @@ export function WebhookSettings() {
                 asChild
               >
                 <a href="https://webhook.site" target="_blank" rel="noopener noreferrer">
-                  Tester gratuitement
+                  Tester avec webhook.site
                 </a>
               </Button>
             </div>
@@ -287,9 +315,13 @@ export function WebhookSettings() {
                       {webhook.url}
                     </p>
                     {(webhook.url.includes('localhost') || webhook.url.includes('127.0.0.1')) && (
-                      <Alert variant="destructive" className="mt-2 py-2 px-3">
-                        <AlertDescription className="text-xs">
-                          ⚠️ URL localhost - Ce webhook ne fonctionnera que si un serveur local est actif sur votre machine. Désactivez-le ou utilisez une URL publique (Zapier, Make.com, etc.).
+                      <Alert className="mt-2 py-2 px-3 bg-destructive/5 border-destructive/20">
+                        <AlertDescription className="text-xs text-destructive">
+                          <strong>⚠️ URL localhost détectée</strong>
+                          <br />
+                          Ce webhook sera automatiquement ignoré lors des soumissions. Les URLs localhost ne fonctionnent pas dans les applications web.
+                          <br />
+                          <span className="font-semibold">Solutions recommandées:</span> Utilisez webhook.site, Zapier, Make.com, ou une autre URL publique accessible sur internet.
                         </AlertDescription>
                       </Alert>
                     )}
