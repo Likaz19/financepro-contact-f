@@ -599,7 +599,13 @@ function App() {
         if (failedWebhooks.length > 0) {
           console.warn("Certains webhooks ont échoué:", failedWebhooks)
           failedWebhooks.forEach(result => {
-            toast.warning(`Webhook ${result.webhookName}: ${result.error}`)
+            const errorMsg = result.error?.includes('Connection refused') || result.error?.includes('Failed to fetch')
+              ? 'URL non accessible (vérifiez que le serveur est en ligne)'
+              : result.error || 'Erreur inconnue'
+            toast.warning(`Webhook "${result.webhookName}" non livré`, {
+              description: errorMsg,
+              duration: 5000
+            })
           })
         }
         

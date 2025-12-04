@@ -62,11 +62,21 @@ export async function sendToWebhook(
       timestamp: new Date().toISOString(),
     }
   } catch (error) {
+    let errorMessage = 'Unknown error'
+    
+    if (error instanceof Error) {
+      errorMessage = error.message
+      
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        errorMessage = 'Connection refused - webhook URL not reachable'
+      }
+    }
+    
     return {
       webhookId: webhook.id,
       webhookName: webhook.name,
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage,
       timestamp: new Date().toISOString(),
     }
   }

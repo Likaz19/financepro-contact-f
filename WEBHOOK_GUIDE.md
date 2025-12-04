@@ -179,11 +179,15 @@ Si vous utilisez votre propre API, vérifiez toujours:
 - Consultez l'historique pour voir les erreurs
 - Testez l'URL avec un outil comme Postman
 
-### Erreur "Network request failed"
+### Erreur "Connection refused" ou "Network request failed"
 
-- Le serveur webhook est inaccessible
+- Le serveur webhook est inaccessible ou éteint
+- **URLs localhost (http://localhost:8000)** : Ces webhooks ne fonctionnent que si vous exécutez un serveur local sur votre machine. Si vous voyez cette erreur :
+  - Vérifiez que votre serveur de développement est démarré
+  - Ou désactivez/supprimez le webhook localhost si vous ne testez pas en local
+  - Les webhooks localhost ne fonctionneront jamais en production - utilisez des services publics comme Zapier, Make.com ou ngrok pour les tests
 - Vérifiez votre connexion Internet
-- Vérifiez que l'URL est correcte
+- Vérifiez que l'URL est correcte et accessible publiquement
 
 ### Erreur 401/403
 

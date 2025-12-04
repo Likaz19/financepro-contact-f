@@ -160,6 +160,18 @@ Want to send form data to other services (Slack, Discord, Make.com, Zapier, etc.
 **Problem:** Storage policies not set or bucket doesn't exist  
 **Solution:** Run the complete SQL script which includes storage setup
 
+### ❌ "Webhook connection refused" or "Proxy error localhost:8000"
+
+**Problem:** You have a webhook configured to a local server that isn't running  
+**Solution:** 
+1. Click the **"Paramètres"** button at the top right of the form
+2. Go to the **"Webhooks"** tab
+3. Either **disable** or **delete** any webhooks pointing to `localhost` URLs
+4. Webhooks pointing to localhost only work if you're running a local server for testing
+5. For production use, configure webhooks with public URLs (Zapier, Make.com, etc.)
+
+**Note:** Webhook failures don't prevent form submission - the form will still save to Supabase successfully. See `WEBHOOK_GUIDE.md` for more details.
+
 ---
 
 ## 🔐 Security & Privacy

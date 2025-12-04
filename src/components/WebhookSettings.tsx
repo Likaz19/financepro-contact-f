@@ -37,6 +37,13 @@ export function WebhookSettings() {
       return
     }
 
+    if (newWebhook.url.includes('localhost') || newWebhook.url.includes('127.0.0.1')) {
+      toast.warning("⚠️ URL localhost détectée", {
+        description: "Ce webhook ne fonctionnera que si un serveur local est en cours d'exécution. Utilisez une URL publique pour un usage en production.",
+        duration: 6000
+      })
+    }
+
     let parsedHeaders: Record<string, string> = {}
     if (newWebhook.headers.trim()) {
       try {
@@ -279,6 +286,13 @@ export function WebhookSettings() {
                     <p className="text-sm text-muted-foreground truncate mb-2">
                       {webhook.url}
                     </p>
+                    {(webhook.url.includes('localhost') || webhook.url.includes('127.0.0.1')) && (
+                      <Alert variant="destructive" className="mt-2 py-2 px-3">
+                        <AlertDescription className="text-xs">
+                          ⚠️ URL localhost - Ce webhook ne fonctionnera que si un serveur local est actif sur votre machine. Désactivez-le ou utilisez une URL publique (Zapier, Make.com, etc.).
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     {webhook.headers && (
                       <p className="text-xs text-muted-foreground font-mono">
                         {Object.keys(webhook.headers).length} en-tête(s) personnalisé(s)
